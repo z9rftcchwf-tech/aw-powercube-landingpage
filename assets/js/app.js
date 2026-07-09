@@ -1,0 +1,583 @@
+/* ============================================================
+   PowerCube / Smart Charging Cube — Auswahlmatrix, PPU-Logik
+   und Panel-Navigation (eine Seite nach der anderen).
+   PPU-Berechnung basiert auf den gelb hinterlegten Eingabefeldern
+   der Datei "Berechnung-PPU-Modell_Sped_Sommer.xlsx".
+   ============================================================ */
+
+/* ----- PPU-Rate anhand des monatlichen Gesamt-Energiebedarfs -----
+   Energiebedarf (kWh/Monat) = Summe( Anzahl e-LKW × Fahrtstrecke km/Tag × Einsatztage/Monat ),  1 km = 1 kWh.
+   Staffelung:
+     < 24.000 kWh            -> keine belastbare Berechnung (Beratung)
+     24.000 – < 30.400 kWh   -> ab 0,27 €/kWh
+     30.400 – < 38.000 kWh   -> ab 0,22 €/kWh
+     38.000 – < 45.000 kWh   -> ab 0,18 €/kWh
+     ≥ 45.000 kWh            -> keine belastbare Berechnung (Beratung)
+   Rückgabe: Zahl (€/kWh) oder null, wenn keine Berechnung möglich ist. */
+function ppuRate(kwh){
+  if(kwh < 24000) return null;
+  if(kwh >= 45000) return null;
+  if(kwh >= 38000) return 0.18;
+  if(kwh >= 30400) return 0.22;
+  if(kwh >= 24000) return 0.27;
+  return null;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const isMan = document.body.classList.contains('theme-man');
+
+  /* ===================================================================
+     PANEL-NAVIGATION — eine Sektion nach der anderen, nicht scrollbar
+     =================================================================== */
+  const panels = Array.from(document.querySelectorAll('#flow .panel'));
+  const panelNames = panels.map(p => p.dataset.panel);
+  const darkPanels = ['hero', 'matrix'];   // panels with dark background
+  const dotsNav = document.getElementById('panel-dots');
+  const backBtn = document.getElementById('panel-back');
+  let currentPanel = 0;
+
+  // Activate panel mode only if JS is running (graceful fallback otherwise)
+  document.body.classList.add('panel-mode');
+
+  // Build dots
+  const dotLabels = { hero:'Start', vorteile:'Vorteile', product:'Produkt', matrix:'Konfigurator', kontakt:'Kontakt', downloads:'Unterlagen' };
+  panels.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.title = dotLabels[p.dataset.panel] || ('Schritt ' + (i+1));
+    b.setAttribute('aria-label', b.title);
+    b.addEventListener('click', () => goToPanel(i));
+    dotsNav.appendChild(b);
+  });
+
+  function resolveIndex(target){
+    if(target === undefined || target === null) return null;
+    if(/^\d+$/.test(String(target))) return parseInt(target, 10);
+    const idx = panelNames.indexOf(String(target));
+    return idx >= 0 ? idx : null;
+  }
+
+  function goToPanel(i){
+    if(i < 0 || i >= panels.length) return;
+    panels.forEach((p, idx) => p.classList.toggle('active', idx === i));
+    currentPanel = i;
+    // dots
+    Array.from(dotsNav.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
+    const dark = darkPanels.includes(panelNames[i]);
+    dotsNav.classList.toggle('on-dark', dark);
+    // back button visibility
+    backBtn.hidden = (i === 0);
+    // scroll the panel itself to top
+    panels[i].scrollTop = 0;
+    window.scrollTo(0, 0);
+    // build dynamic content when needed
+    if(panelNames[i] === 'matrix') ensureWizardInit();
+  }
+
+  // Any [data-goto] element navigates between panels
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('[data-goto]');
+    if(!trigger) return;
+    const idx = resolveIndex(trigger.dataset.goto);
+    if(idx !== null){ e.preventDefault(); goToPanel(idx); }
+  });
+
+  backBtn.addEventListener('click', () => goToPanel(currentPanel - 1));
+
+  // Keyboard: left/right arrows move between panels (skip when typing)
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if(e.key === 'ArrowRight' || e.key === 'PageDown') goToPanel(currentPanel + 1);
+    if(e.key === 'ArrowLeft'  || e.key === 'PageUp')   goToPanel(currentPanel - 1);
+  });
+
+  goToPanel(0);
+
+  /* ===================================================================
+     WIZARD (innerhalb des Konfigurator-Panels)
+     =================================================================== */
+  const wizard = document.getElementById('wizard');
+  if(!wizard) return;
+
+  const steps    = Array.from(wizard.querySelectorAll('.wizard-step'));
+  const progress = Array.from(wizard.querySelectorAll('.wizard-progress .step'));
+  let current = 0;
+
+  function showStep(i){
+    steps.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    progress.forEach((p, idx) => {
+      p.classList.toggle('active', idx === i);
+      p.classList.toggle('done', idx < i);
+    });
+    current = i;
+    // when entering step 2, (re)build the per-truck profiles
+    if(i === 1) buildProfiles();
+    const wb = wizard.querySelector('.wizard-body');
+    if(wb) wb.scrollTop = 0;
+  }
+
+  /* ---- Choice chip / card toggling ---- */
+  wizard.addEventListener('change', (e) => {
+    const inp = e.target;
+    if(inp.matches('.choice input, .choice-card input')){
+      const group = inp.name;
+      wizard.querySelectorAll(`.choice input[name="${group}"], .choice-card input[name="${group}"]`)
+        .forEach(o => o.closest('.choice,.choice-card').classList.toggle('sel', o.checked));
+    }
+    if(inp.name === 'pv'){
+      const cond = document.getElementById('pv-ppu-cond');
+      const showCond = inp.value === 'geplant';
+      if(cond){
+        cond.classList.toggle('show', showCond);
+        // reset the PPU-interest checkbox whenever another option is chosen
+        if(!showCond){ const cb = cond.querySelector('input[name="pv_ppu"]'); if(cb) cb.checked = false; }
+      }
+    }
+    if(inp.name === 'netz'){
+      const kwCond = document.getElementById('netz-kw-cond');
+      const showKw = inp.value.includes('Direktanschluss');
+      if(kwCond){
+        kwCond.classList.toggle('show', showKw);
+        if(!showKw){ const f = kwCond.querySelector('input[name="netz_kw"]'); if(f) f.value = ''; }
+      }
+    }
+  });
+
+  /* ---- Truck repeater (Step 1) ---- */
+  const truckList = document.getElementById('truck-list');
+  const addBtn = document.getElementById('add-truck');
+  let truckCount = 0;
+
+  function truckRowHTML(n){
+    const brand = isMan ? '' :
+      `<div><label>Fabrikat</label><input type="text" name="t_brand_${n}" placeholder="z. B. MAN, Volvo"></div>`;
+    return `<div class="truck-row ${isMan?'no-brand':''}" data-row="${n}">
+      <div class="idx">${n}</div>
+      ${brand}
+      <div><label>Anzahl</label><input type="number" min="1" name="t_qty_${n}" value="1"></div>
+      <div><label>Typ / Einsatz</label><input type="text" name="t_type_${n}" placeholder="z. B. 3-Achser, Verteiler"></div>
+      <div><label>Akku kWh</label><input type="number" min="0" name="t_akku_${n}" placeholder="z. B. 480"></div>
+      <button type="button" class="icon-btn remove-truck" title="Entfernen" aria-label="Zeile entfernen">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+      </button>
+    </div>`;
+  }
+  function addTruck(){ truckCount++; truckList.insertAdjacentHTML('beforeend', truckRowHTML(truckCount)); }
+
+  let wizardInited = false;
+  function ensureWizardInit(){
+    if(wizardInited) return;
+    wizardInited = true;
+    addTruck();
+  }
+  if(addBtn){
+    addBtn.addEventListener('click', addTruck);
+    truckList.addEventListener('click', e => {
+      if(e.target.closest('.remove-truck')){
+        if(truckList.querySelectorAll('.truck-row').length > 1) e.target.closest('.truck-row').remove();
+      }
+    });
+  }
+
+  /* ---- Read all truck rows from Step 1 ---- */
+  function readTrucks(){
+    const rows = [];
+    truckList.querySelectorAll('.truck-row').forEach(r => {
+      const n = r.dataset.row;
+      const get = sel => { const el = r.querySelector(sel); return el ? el.value.trim() : ''; };
+      rows.push({
+        row: n,
+        brand: get(`input[name="t_brand_${n}"]`),
+        qty:   parseInt(get(`input[name="t_qty_${n}"]`)) || 1,
+        type:  get(`input[name="t_type_${n}"]`),
+        akku:  get(`input[name="t_akku_${n}"]`)
+      });
+    });
+    return rows;
+  }
+
+  /* ---- Build per-truck driving-profile cards (Step 2) ---- */
+  const profileList = document.getElementById('profile-list');
+  function buildProfiles(){
+    const trucks = readTrucks();
+    // preserve previously entered profile values
+    const prev = {};
+    profileList.querySelectorAll('input').forEach(i => prev[i.name] = (i.type==='checkbox' ? i.checked : i.value));
+
+    if(!trucks.length){
+      profileList.innerHTML = `<div class="profile-empty">Bitte fügen Sie in Schritt 1 zuerst mindestens einen e-LKW hinzu.</div>`;
+      return;
+    }
+    profileList.innerHTML = trucks.map(t => {
+      const label = [t.brand, t.type].filter(Boolean).join(' · ') || 'e-LKW';
+      const n = t.row;
+      return `<div class="profile-card" data-row="${n}">
+        <div class="pc-head"><span class="pc-badge">${t.qty}×</span><span>${label}</span><span class="pc-sub">Zeile ${n} aus Schritt 1</span></div>
+        <div class="row3">
+          <div class="field"><label>Fahrtstrecke <span class="hint">(km / 24 h)</span></label><input type="number" name="p_km_${n}" placeholder="z. B. 220"></div>
+          <div class="field"><label>Einsatztage <span class="hint">(pro Monat)</span></label><input type="number" name="p_tage_${n}" placeholder="z. B. 20"></div>
+          <div class="field"><label>Einsatzzeiten</label><input type="text" name="p_zeit_${n}" placeholder="z. B. Mo–Fr, 6–18 Uhr"></div>
+        </div>
+        <div class="scenario-label">Geplante Ladeszenarien</div>
+        <div class="choice-cards">
+          <label class="choice-card"><input type="checkbox" name="p_uebernacht_${n}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg><div><div class="t">Übernachtladen</div><div class="d">Vollständiges Laden im Depot über Nacht.</div></div></label>
+          <label class="choice-card"><input type="checkbox" name="p_zwischen_${n}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><div class="t">Zwischenladungen tagsüber</div><div class="d">Kurzzeitige Nachladung im Tagesbetrieb.</div></div></label>
+        </div>
+        <div class="field" style="margin-top:14px"><label>Zeitfenster für Zwischenladungen <span class="hint">(falls geplant)</span></label><input type="text" name="p_fenster_${n}" placeholder="z. B. 11–13 Uhr (Mittagspause)"></div>
+      </div>`;
+    }).join('');
+
+    // restore preserved values
+    profileList.querySelectorAll('input').forEach(i => {
+      if(i.name in prev){
+        if(i.type === 'checkbox'){ i.checked = prev[i.name]; if(i.checked) i.closest('.choice-card').classList.add('sel'); }
+        else i.value = prev[i.name];
+      }
+    });
+  }
+
+  /* ---- Navigation buttons inside wizard ---- */
+  wizard.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', () => {
+    if(current < steps.length - 1) showStep(current + 1);
+  }));
+  wizard.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', () => {
+    if(current > 0) showStep(current - 1);
+  }));
+
+  /* ---- Compute & show result ---- */
+  function val(name){ const el = wizard.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; }
+
+  function buildSummary(trucks, total, netz, netzKw, totalKwh, capacity, capacityNote){
+    const grid = document.getElementById('result-summary-grid');
+    if(!grid) return;
+
+    // Trucks block (full width)
+    const truckRows = trucks.map(t => {
+      const n = t.row;
+      const label = [t.brand, t.type].filter(Boolean).join(' · ') || 'e-LKW';
+      const km = val(`p_km_${n}`), tage = val(`p_tage_${n}`), zeit = val(`p_zeit_${n}`);
+      const scen = [];
+      if(wizard.querySelector(`[name="p_uebernacht_${n}"]`)?.checked) scen.push('Übernacht');
+      if(wizard.querySelector(`[name="p_zwischen_${n}"]`)?.checked){
+        const f = val(`p_fenster_${n}`);
+        scen.push('Zwischenladung' + (f ? ` (${f})` : ''));
+      }
+      const parts = [];
+      parts.push(`<b>${t.qty}× ${label}</b>`);
+      if(t.akku) parts.push(`Akku ${t.akku} kWh`);
+      if(km) parts.push(`${km} km/24 h`);
+      if(tage) parts.push(`${tage} Tage/Monat`);
+      if(zeit) parts.push(zeit);
+      if(scen.length) parts.push(scen.join(', '));
+      return `<div class="rs-truck">${parts.map(p=>`<span>${p}</span>`).join('')}</div>`;
+    }).join('');
+    let html = `<div class="rs-trucks"><div class="rs-item"><span class="rs-k">Geplante e-LKW</span><span class="rs-v">${total} Fahrzeug${total===1?'':'e'}${trucks.length>1?` · ${trucks.length} Gruppen`:''}</span></div>${truckRows}</div>`;
+
+    // PV
+    const pvMap = { vorhanden:'PV/Eigenstrom vorhanden', geplant:'PV-Anschaffung geplant', keine:'Keine PV geplant' };
+    const pv = (wizard.querySelector('input[name="pv"]:checked')||{}).value;
+    if(pv){
+      let pvText = pvMap[pv] || pv;
+      const kwp = val('pv_kwp'); if(kwp) pvText += ` · ${kwp} kWp`;
+      html += rsItem('Eigenstrom / PV', pvText);
+      if(wizard.querySelector('input[name="pv_ppu"]')?.checked)
+        html += rsItem('PV im PPU-Modell', 'Interesse vorhanden');
+    }
+    // Netzanschluss
+    html += rsItem('Netzanschluss', (netz || 'noch offen') + (netzKw ? ` · max. ${netzKw} kW` : ''));
+    // Ladekapazität (mit Hinweis)
+    if(capacity){
+      html += rsItem('Ladekapazität', `${capacity}${capacityNote ? `<span class="rs-note">${capacityNote}</span>` : ''}`);
+    }
+    // Gesamter Energiebedarf
+    if(totalKwh){
+      const kwhStr = Math.round(totalKwh).toLocaleString('de-DE');
+      html += rsItem('Energiebedarf', `${kwhStr} kWh / Monat`);
+    }
+
+    grid.innerHTML = html;
+  }
+  function rsItem(k, v){ return `<div class="rs-item"><span class="rs-k">${k}</span><span class="rs-v">${v}</span></div>`; }
+
+  // Speichert die zuletzt berechneten Ergebnisdaten (für PDF & Kontaktformular)
+  let lastResult = null;
+
+  const computeBtn = document.getElementById('compute-btn');
+  if(computeBtn){
+    computeBtn.addEventListener('click', () => {
+      const trucks = readTrucks();
+      let total = trucks.reduce((s, t) => s + (t.qty || 0), 0);
+      if(total === 0) total = 1;
+
+      // Monatlicher Energiebedarf: Summe(Anzahl × km/Tag × Einsatztage/Monat), 1 km = 1 kWh
+      const totalKwh = trucks.reduce((s, t) => {
+        const km   = parseFloat(val(`p_km_${t.row}`)) || 0;
+        const tage = parseFloat(val(`p_tage_${t.row}`)) || 0;
+        return s + (t.qty || 0) * km * tage;
+      }, 0);
+
+      const netz = (wizard.querySelector('input[name="netz"]:checked')||{}).value || 'CEE 5/125 A';
+      const netzKw = val('netz_kw');
+      const isCee = !netz.includes('Direktanschluss');
+
+      // --- Empfohlener Cube (bei CEE 5/125 A & ≤ 5 e-LKW: PowerCube 400 kW · 756 kWh) ---
+      const cubeName = 'PowerCube 400 kW · 756 kWh';
+      document.getElementById('res-cube-name').textContent = cubeName;
+      document.getElementById('res-trucks').textContent = total;
+      document.getElementById('res-netz').textContent = netz + (netzKw ? ` (${netzKw} kW)` : '');
+
+      // --- Ladekapazität nach Netzanschluss ---
+      // CEE 5/125 A            -> bis zu 5 e-LKW / 24 h
+      // Direktanschluss ≥150 kW -> bis zu 10 e-LKW / 24 h
+      // Direktanschluss <150 kW -> bis zu 5 e-LKW / 24 h
+      const CAPACITY_NOTE = 'Abhängig vom geplanten Einsatz- und Ladeprofil der Fahrzeuge.';
+      let capacityValue;
+      if(isCee){
+        capacityValue = 'bis zu 5 e-LKW / 24 h';
+      } else {
+        const kwNum = parseFloat(netzKw) || 0;
+        capacityValue = (kwNum >= 150) ? 'bis zu 10 e-LKW / 24 h' : 'bis zu 5 e-LKW / 24 h';
+      }
+      const capacity = capacityValue;
+      document.getElementById('res-capacity').textContent = capacity;
+      document.getElementById('res-cube-desc').innerHTML =
+        `Mit integrierter Alpitronic HYC400. Lädt <strong id="res-capacity">${capacity}</strong> bei Betrieb an <strong id="res-netz">${netz}${netzKw ? ` (${netzKw} kW)` : ''}</strong>. Für Ihre <strong id="res-trucks">${total}</strong> geplanten e-LKW.<br><span class="cap-note">${CAPACITY_NOTE}</span>`;
+
+      // --- PPU-Rate ---
+      const rate = ppuRate(totalKwh);
+      const ppuBox    = document.getElementById('ppu-box');
+      const ppuNocalc = document.getElementById('ppu-nocalc');
+      const cubeBlock = document.getElementById('result-cube');
+      const videoBlock = document.getElementById('result-video');
+      const videoEl   = document.getElementById('result-video-el');
+      let rateLabel;
+      // Ladekapazität für Zusammenfassung/PDF: im No-Calc-Fall Hinweis auf gesonderte Konfiguration
+      let summaryCapacity = capacity;
+      let summaryCapacityNote = CAPACITY_NOTE;
+      if(rate === null){
+        // keine belastbare Berechnung möglich -> Beratungstext + Video-Platzhalter statt Cube-Empfehlung
+        ppuBox.style.display = 'none';
+        ppuNocalc.classList.add('show');
+        if(cubeBlock) cubeBlock.style.display = 'none';
+        if(videoBlock) videoBlock.classList.add('show');
+        if(videoEl){ try { videoEl.currentTime = 0; const pr = videoEl.play(); if(pr && pr.catch) pr.catch(()=>{}); } catch(e){} }
+        rateLabel = 'Individuelle Beratung erforderlich';
+        summaryCapacity = 'Bestandteil der gesonderten PowerCube Konfiguration';
+        summaryCapacityNote = '';
+      } else {
+        const rateStr = rate.toFixed(2).replace('.', ',');
+        document.getElementById('ppu-rate-val').innerHTML = `ab ${rateStr} <small>€/kWh</small>`;
+        ppuBox.style.display = '';
+        ppuNocalc.classList.remove('show');
+        if(cubeBlock) cubeBlock.style.display = '';
+        if(videoBlock) videoBlock.classList.remove('show');
+        if(videoEl){ try { videoEl.pause(); } catch(e){} }
+        rateLabel = `ab ${rateStr} €/kWh`;
+      }
+
+      buildSummary(trucks, total, netz, netzKw, totalKwh, summaryCapacity, summaryCapacityNote);
+
+      // Ergebnis für PDF / Kontaktformular merken
+      const pvSel = (wizard.querySelector('input[name="pv"]:checked')||{}).value;
+      const pvKwp = val('pv_kwp');
+      const pvPpu = wizard.querySelector('input[name="pv_ppu"]')?.checked || false;
+      lastResult = { trucks, total, totalKwh, netz, netzKw, rate, rateLabel, cubeName, capacity: summaryCapacity, capacityNote: summaryCapacityNote, pv: pvSel, pvKwp, pvPpu };
+
+      document.getElementById('result-panel').classList.add('show');
+      showStep(steps.length - 1);
+    });
+  }
+
+  /* ===================================================================
+     ZUSAMMENFASSUNG ALS PDF  (jsPDF)
+     =================================================================== */
+  function buildSummaryPdf(){
+    if(!lastResult || !window.jspdf) return null;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'mm', format:'a4' });
+    const pageW = 210, mL = 18, mR = 18, contentW = pageW - mL - mR;
+    let y = 20;
+    const BLUE = [34, 108, 224], INK = [17, 24, 39], GREY = [110, 120, 135];
+
+    doc.setFillColor(INK[0],INK[1],INK[2]); doc.rect(0, 0, pageW, 4, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(INK[0],INK[1],INK[2]);
+    doc.text('AW Automotive \u2013 PowerCube', mL, y); y += 7;
+    doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+    doc.text('Zusammenfassung Ihrer Konfiguration', mL, y); y += 4;
+    doc.setDrawColor(220); doc.line(mL, y, pageW - mR, y); y += 10;
+
+    const heading = (t) => { doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]); doc.text(t, mL, y); y += 6; doc.setTextColor(INK[0],INK[1],INK[2]); };
+    const kv = (k, v) => {
+      doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(INK[0],INK[1],INK[2]);
+      const kLines = doc.splitTextToSize(String(k), 52); doc.text(kLines, mL, y);
+      doc.setFont('helvetica','normal'); doc.setTextColor(60,66,78);
+      const vLines = doc.splitTextToSize(String(v), contentW - 55); doc.text(vLines, mL + 55, y);
+      y += Math.max(6, Math.max(kLines.length, vLines.length) * 5);
+    };
+    const line = () => { doc.setDrawColor(232); doc.line(mL, y, pageW - mR, y); y += 6; };
+    const checkPage = () => { if(y > 262){ doc.addPage(); y = 20; } };
+
+    if(lastResult.rate === null){
+      heading('Ihre individuelle Ladel\u00f6sung');
+      const txt = 'Auf Basis Ihrer Angaben konfigurieren wir Ihren PowerCube passgenau. Der PowerCube ist modular aufgebaut und l\u00e4sst sich flexibel an Ihr Einsatz- und Ladeprofil anpassen \u2013 von der Speichergr\u00f6\u00dfe \u00fcber die Ladeleistung bis zum Netzanschluss. Ein pers\u00f6nliches Beratungsgespr\u00e4ch liefert die Grundlage f\u00fcr ein ma\u00dfgeschneidertes Konzept.';
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(60,66,78);
+      const l = doc.splitTextToSize(txt, contentW); doc.text(l, mL, y); y += l.length * 5 + 3;
+      if(lastResult.capacity) kv('Ladekapazit\u00e4t', lastResult.capacity);
+    } else {
+      heading('Empfohlene Ladel\u00f6sung');
+      kv('L\u00f6sung', lastResult.cubeName);
+      kv('CCS-Ladeleistung', 'bis zu 400 kW');
+      kv('Batteriespeicher', '756 kWh');
+      kv('Bauform', '10-Fu\u00df-Design-Container');
+      kv('Betriebsart', 'Hybrid PV/Batterie/Netz \u2013 vorrangige PV-Nutzung');
+      kv('Ladekapazit\u00e4t', lastResult.capacity);
+      if(lastResult.capacityNote){
+        doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+        const nl = doc.splitTextToSize(lastResult.capacityNote, contentW - 55); doc.text(nl, mL + 55, y); y += nl.length * 4 + 1;
+        doc.setFont('helvetica','normal');
+      }
+    }
+    y += 2; line(); checkPage();
+
+    heading('Preisindikation \u00b7 PPU-Modell');
+    if(lastResult.rate === null){
+      const txt = 'Mit den hinterlegten Daten l\u00e4sst sich keine belastbare PPU-Geb\u00fchr berechnen. Wir empfehlen ein pers\u00f6nliches Beratungsgespr\u00e4ch.';
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(60,66,78);
+      const l = doc.splitTextToSize(txt, contentW); doc.text(l, mL, y); y += l.length * 5 + 2;
+    } else {
+      kv('PPU-Rate', lastResult.rateLabel);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+      const dis = 'Unverbindliche Orientierung, enth\u00e4lt keinen Stromliefervertrag. Exakte Geb\u00fchr erst nach detaillierter Bedarfsanalyse.';
+      const l = doc.splitTextToSize(dis, contentW); doc.text(l, mL, y); y += l.length * 4 + 2;
+    }
+    y += 2; line(); checkPage();
+
+    heading('Ihre Angaben');
+    kv('Geplante e-LKW', lastResult.total + ' Fahrzeug' + (lastResult.total===1?'':'e') + (lastResult.trucks.length>1?(' (' + lastResult.trucks.length + ' Gruppen)'):''));
+    lastResult.trucks.forEach((t) => {
+      checkPage();
+      const n = t.row;
+      const label = [t.brand, t.type].filter(Boolean).join(' \u00b7 ') || 'e-LKW';
+      const km = val('p_km_' + n), tage = val('p_tage_' + n), zeit = val('p_zeit_' + n);
+      const scen = [];
+      if(wizard.querySelector('[name="p_uebernacht_' + n + '"]') && wizard.querySelector('[name="p_uebernacht_' + n + '"]').checked) scen.push('\u00dcbernacht');
+      const zw = wizard.querySelector('[name="p_zwischen_' + n + '"]');
+      if(zw && zw.checked){ const f = val('p_fenster_' + n); scen.push('Zwischenladung' + (f ? (' (' + f + ')') : '')); }
+      const det = [];
+      if(t.akku) det.push('Akku ' + t.akku + ' kWh');
+      if(km) det.push(km + ' km/24 h');
+      if(tage) det.push(tage + ' Tage/Monat');
+      if(zeit) det.push(zeit);
+      if(scen.length) det.push(scen.join(', '));
+      kv('\u00bb ' + t.qty + '\u00d7 ' + label, det.length ? det.join(' \u00b7 ') : '\u2013');
+    });
+    const pvMap = { vorhanden:'PV/Eigenstrom vorhanden', geplant:'PV-Anschaffung geplant', keine:'Keine PV geplant' };
+    if(lastResult.pv){
+      let pvText = pvMap[lastResult.pv] || lastResult.pv;
+      if(lastResult.pvKwp) pvText += ' (' + lastResult.pvKwp + ' kWp)';
+      kv('Eigenstrom / PV', pvText);
+      if(lastResult.pvPpu) kv('PV im PPU-Modell', 'Interesse vorhanden');
+    }
+    kv('Netzanschluss', (lastResult.netz || 'noch offen') + (lastResult.netzKw ? (' (max. ' + lastResult.netzKw + ' kW)') : ''));
+    if(lastResult.totalKwh) kv('Energiebedarf', Math.round(lastResult.totalKwh).toLocaleString('de-DE') + ' kWh / Monat');
+
+    y = 285;
+    doc.setDrawColor(220); doc.line(mL, y, pageW - mR, y); y += 5;
+    doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
+    doc.text('AW Automotive GmbH \u00b7 Max-Planck-Str. 23 \u00b7 06796 Sandersdorf-Brehna \u00b7 info@aw-automotive.de \u00b7 www.aw-automotive.de', mL, y);
+    doc.text('Erstellt am ' + new Date().toLocaleDateString('de-DE'), mL, y + 4);
+    return doc;
+  }
+
+  let summaryPdfUrl = null;
+
+  const downloadBtn = document.getElementById('download-summary-btn');
+  if(downloadBtn){
+    downloadBtn.addEventListener('click', () => {
+      const doc = buildSummaryPdf();
+      if(!doc){ alert('Bitte berechnen Sie zuerst Ihr Ergebnis.'); return; }
+      doc.save('AW_PowerCube_Zusammenfassung.pdf');
+    });
+  }
+
+  const toContactBtn = document.getElementById('to-contact-btn');
+  const summaryAttached = document.getElementById('summary-attached');
+  if(toContactBtn){
+    toContactBtn.addEventListener('click', () => {
+      const doc = buildSummaryPdf();
+      if(doc){
+        if(summaryPdfUrl) URL.revokeObjectURL(summaryPdfUrl);
+        summaryPdfUrl = URL.createObjectURL(doc.output('blob'));
+        if(summaryAttached) summaryAttached.hidden = false;
+      }
+      const idx = resolveIndex('kontakt');
+      if(idx !== null) goToPanel(idx);
+    });
+  }
+
+  const summaryViewBtn = document.getElementById('summary-view-btn');
+  if(summaryViewBtn){
+    summaryViewBtn.addEventListener('click', () => {
+      if(!summaryPdfUrl){ const doc = buildSummaryPdf(); if(doc) summaryPdfUrl = URL.createObjectURL(doc.output('blob')); }
+      if(summaryPdfUrl) window.open(summaryPdfUrl, '_blank');
+    });
+  }
+
+
+  /* ---- File upload (Fragenkatalog) ---- */
+  const uploadInput = document.getElementById('katalog-upload');
+  const uploadDrop  = document.getElementById('upload-drop');
+  const uploadText  = document.getElementById('upload-text');
+  if(uploadInput && uploadDrop){
+    const setFile = (file) => {
+      if(file){
+        uploadText.innerHTML = `<strong>${file.name}</strong> ausgewählt`;
+        uploadDrop.classList.add('has-file');
+      } else {
+        uploadText.innerHTML = 'Datei hierher ziehen oder <strong>auswählen</strong>';
+        uploadDrop.classList.remove('has-file');
+      }
+    };
+    uploadInput.addEventListener('change', () => setFile(uploadInput.files[0]));
+    ['dragenter','dragover'].forEach(ev => uploadDrop.addEventListener(ev, e => { e.preventDefault(); uploadDrop.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(ev => uploadDrop.addEventListener(ev, e => { e.preventDefault(); uploadDrop.classList.remove('drag'); }));
+    uploadDrop.addEventListener('drop', e => {
+      const f = e.dataTransfer.files[0];
+      if(f){ uploadInput.files = e.dataTransfer.files; setFile(f); }
+    });
+  }
+
+  /* ---- Contact form ---- */
+  const form = document.getElementById('contact-form');
+  if(form){
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      let ok = true;
+      form.querySelectorAll('[required]').forEach(f => {
+        const wrap = f.closest('.field');
+        const valid = f.value.trim() !== '';
+        if(wrap) wrap.classList.toggle('invalid', !valid);
+        if(!valid) ok = false;
+      });
+      if(!ok) return;
+      // Konfigurations-Zusammenfassung (PDF) wurde bei "Beratung anfragen" erzeugt
+      // und wird der Anfrage automatisch als Anhang beigefügt.
+      const summaryOn = summaryAttached && !summaryAttached.hidden;
+      form.style.display = 'none';
+      const thanks = document.getElementById('thanks');
+      if(summaryOn){
+        const note = thanks.querySelector('.thanks-summary-note');
+        if(!note){
+          const p = document.createElement('p');
+          p.className = 'thanks-summary-note';
+          p.style.cssText = 'margin-top:10px;font-size:.92rem;color:#226CE0;font-weight:600';
+          p.innerHTML = 'Ihre Konfigurations-Zusammenfassung wurde als PDF automatisch beigefügt.';
+          thanks.appendChild(p);
+        }
+      }
+      thanks.classList.add('show');
+    });
+  }
+});

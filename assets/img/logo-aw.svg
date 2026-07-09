@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" role="img" aria-label="AW Automotive">
+  <g fill="currentColor">
+    <!-- Stylized /AW bildmarke -->
+    <path d="M8 64 L30 16 L42 16 L20 64 Z"/>
+    <path d="M40 16 L52 16 L60 46 L68 16 L80 16 L88 46 L96 16 L108 16 L94 64 L82 64 L74 36 L66 64 L54 64 Z"/>
+  </g>
+  <text x="118" y="38" font-family="Barlow, sans-serif" font-weight="700" font-size="17" letter-spacing="1.5" fill="currentColor">AW</text>
+  <text x="118" y="56" font-family="Barlow, sans-serif" font-weight="400" font-size="11" letter-spacing="2.4" fill="currentColor">AUTOMOTIVE</text>
+</svg>
