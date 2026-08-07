@@ -1,5 +1,5 @@
 /* ============================================================
-   PowerCube / Smart Charging Cube — Auswahlmatrix, PPU-Logik
+   AW Automotive PowerCube — Auswahlmatrix, PPU-Logik
    und Panel-Navigation (eine Seite nach der anderen).
    PPU-Berechnung basiert auf den gelb hinterlegten Eingabefeldern
    der Datei "Berechnung-PPU-Modell_Sped_Sommer.xlsx".
@@ -24,8 +24,6 @@ function ppuRate(kwh){
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-
-  const isMan = document.body.classList.contains('theme-man');
 
   /* ===================================================================
      PANEL-NAVIGATION — eine Sektion nach der anderen, nicht scrollbar
@@ -151,9 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let truckCount = 0;
 
   function truckRowHTML(n){
-    const brand = isMan ? '' :
-      `<div><label>Fabrikat</label><input type="text" name="t_brand_${n}" placeholder="z. B. MAN, Volvo"></div>`;
-    return `<div class="truck-row ${isMan?'no-brand':''}" data-row="${n}">
+    const brand =
+      `<div><label>Fabrikat</label><input type="text" name="t_brand_${n}" placeholder="z. B. Volvo, Scania"></div>`;
+    return `<div class="truck-row" data-row="${n}">
       <div class="idx">${n}</div>
       ${brand}
       <div><label>Anzahl</label><input type="number" min="1" name="t_qty_${n}" value="1"></div>
