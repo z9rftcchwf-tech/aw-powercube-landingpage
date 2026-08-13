@@ -109,6 +109,13 @@ document.addEventListener('DOMContentLoaded', () => {
       p.classList.toggle('active', idx === i);
       p.classList.toggle('done', idx < i);
     });
+    // Aktiven Schritt in der Fortschrittsleiste sichtbar halten (mobil scrollbar)
+    const activeTab = progress[i];
+    if(activeTab && activeTab.parentElement){
+      const bar = activeTab.parentElement;
+      const target = activeTab.offsetLeft - (bar.clientWidth - activeTab.offsetWidth) / 2;
+      bar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+    }
     current = i;
     // when entering step 2, (re)build the per-truck profiles
     if(i === 1) buildProfiles();

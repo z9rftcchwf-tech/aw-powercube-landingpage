@@ -123,6 +123,8 @@ h3{font-size:1.3rem;margin-bottom:8px}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(34,108,224,.34)}
 .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border)}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost.btn-on-dark{color:#fff;border-color:rgba(255,255,255,.45)}
+.btn-ghost.btn-on-dark:hover{border-color:#fff;color:#fff;background:rgba(255,255,255,.08)}
 .btn-dark{background:var(--ink);color:#fff}
 .btn-dark:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .header-cta{display:flex;gap:10px;align-items:center}
@@ -229,9 +231,16 @@ h3{font-size:1.3rem;margin-bottom:8px}
 /* Choice chips */
 .choices{display:flex;flex-wrap:wrap;gap:10px}
 .choice{
+  display:block;
   position:relative;cursor:pointer;border:1.5px solid var(--border);border-radius:12px;
   padding:14px 18px;font-weight:600;font-size:.95rem;transition:all .18s;background:#fff;flex:1;min-width:130px;text-align:center;
 }
+/* Checkbox-Label im Aufklappbereich (z. B. PV-PPU-Interesse) */
+.cond .choice{display:flex;align-items:flex-start;gap:10px;text-align:left}
+.cond .choice input[type=checkbox]{
+  position:static;opacity:1;inset:auto;flex:0 0 auto;width:18px;height:18px;margin-top:2px;accent-color:var(--accent);
+}
+.cond .choice span{flex:1;min-width:0;font-weight:500;line-height:1.5}
 .choice input{position:absolute;opacity:0;inset:0;cursor:pointer}
 .choice .sub{display:block;font-weight:400;font-size:.8rem;color:var(--muted);margin-top:3px}
 .choice:hover{border-color:var(--accent)}
@@ -267,6 +276,10 @@ h3{font-size:1.3rem;margin-bottom:8px}
 .cond.show{display:block;animation:fade .3s}
 
 .wizard-nav{display:flex;justify-content:space-between;gap:12px;margin-top:30px;padding-top:24px;border-top:1px solid var(--border)}
+@media(max-width:560px){
+  .wizard-nav{flex-wrap:wrap}
+  .wizard-nav .btn{flex:1 1 100%;justify-content:center}
+}
 
 /* ---------- Result panel ---------- */
 .result{display:none}
@@ -276,6 +289,8 @@ h3{font-size:1.3rem;margin-bottom:8px}
   background:var(--ink);color:#fff;border-radius:var(--radius-lg);padding:36px;margin-bottom:28px;
 }
 @media(max-width:780px){.result-cube{grid-template-columns:1fr}}
+.result-cube>div{min-width:0}
+.result-cube img{width:100%;height:auto}
 .result-video{display:none;background:var(--ink);color:#fff;border-radius:var(--radius-lg);padding:36px;margin-bottom:28px}
 .result-video.show{display:block;animation:fade .5s}
 .result-video .tagline{color:var(--accent);font-weight:600;margin-bottom:10px}
@@ -287,6 +302,9 @@ h3{font-size:1.3rem;margin-bottom:8px}
 .result-cube .tagline{color:var(--accent);font-weight:600;margin-bottom:10px}
 .result-cube p{color:#c8cfdb;font-size:.98rem}
 .result-cube .mini-specs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.result-cube .mini-specs div{min-width:0}
+.result-cube .mini-specs .k{overflow-wrap:anywhere}
+@media(max-width:460px){.result-cube .mini-specs{grid-template-columns:1fr}}
 .result-cube .mini-specs div{background:rgba(255,255,255,.07);border-radius:10px;padding:12px 14px}
 .result-cube .mini-specs .k{font-size:.74rem;color:#9aa6b6;text-transform:uppercase;letter-spacing:.05em}
 .result-cube .mini-specs .v{font-size:1.15rem;font-weight:700}
