@@ -547,10 +547,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---- Contact form ---- */
+  /* ---- Contact form (Versand via Web3Forms an info@aw-automotive.de) ---- */
+  const WEB3FORMS_KEY = '99977e12-7ca8-4066-912c-e9a344e8fc68';
   const form = document.getElementById('contact-form');
   if(form){
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       let ok = true;
       form.querySelectorAll('[required]').forEach(f => {
@@ -560,22 +561,94 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!valid) ok = false;
       });
       if(!ok) return;
-      // Konfigurations-Zusammenfassung (PDF) wurde bei "Beratung anfragen" erzeugt
-      // und wird der Anfrage automatisch als Anhang beigefügt.
-      const summaryOn = summaryAttached && !summaryAttached.hidden;
-      form.style.display = 'none';
-      const thanks = document.getElementById('thanks');
-      if(summaryOn){
-        const note = thanks.querySelector('.thanks-summary-note');
-        if(!note){
-          const p = document.createElement('p');
-          p.className = 'thanks-summary-note';
-          p.style.cssText = 'margin-top:10px;font-size:.92rem;color:#226CE0;font-weight:600';
-          p.innerHTML = 'Ihre Konfigurations-Zusammenfassung wurde als PDF automatisch beigefügt.';
-          thanks.appendChild(p);
-        }
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const errBox = getFormErrorBox();
+      errBox.hidden = true;
+
+      /* Datei-Upload (Fragenkatalog) prüfen: max. 5 MB */
+      const katalogInput = document.getElementById('katalog-upload');
+      const katalogFile = katalogInput && katalogInput.files && katalogInput.files[0] ? katalogInput.files[0] : null;
+      if(katalogFile && katalogFile.size > 5 * 1024 * 1024){
+        errBox.textContent = 'Der hochgeladene Fragenkatalog ist größer als 5 MB. Bitte verwenden Sie eine kleinere Datei.';
+        errBox.hidden = false;
+        return;
       }
-      thanks.classList.add('show');
+
+      const fd = new FormData();
+      fd.append('access_key', WEB3FORMS_KEY);
+      fd.append('from_name', 'AW PowerCube Landingpage');
+      const firma = (form.querySelector('[name="firma"]') || {}).value || '';
+      fd.append('subject', 'Beratungsanfrage PowerCube' + (firma ? ' \u2013 ' + firma : ''));
+
+      /* Kontaktfelder */
+      const label = { firma:'Firmierung', ansprech:'Ansprechpartner', funktion:'Funktion', email:'E-Mail', tel:'Telefon', zeitraum:'Inbetriebnahmezeitraum', nachricht:'Nachricht' };
+      Object.keys(label).forEach(name => {
+        const f = form.querySelector('[name="' + name + '"]');
+        if(f) fd.append(label[name], f.value.trim());
+      });
+      const emailField = form.querySelector('[name="email"]');
+      if(emailField) fd.append('email', emailField.value.trim()); // Reply-To
+      const bot = form.querySelector('[name="botcheck"]');
+      if(bot && bot.checked){ return; } // Honeypot: stiller Abbruch bei Bots
+
+      /* Konfigurator-Daten als Text */
+      if(lastResult){
+        fd.append('Konfigurator: Energiebedarf', Math.round(lastResult.totalKwh).toLocaleString('de-DE') + ' kWh/Monat');
+        fd.append('Konfigurator: Netzanschluss', lastResult.netz + (lastResult.netzKw ? ' (' + lastResult.netzKw + ' kW)' : ''));
+        fd.append('Konfigurator: Pay-per-Use-Rate', lastResult.rate === null ? 'Individuelles Angebot (gesonderte Konfiguration)' : lastResult.rateLabel + ' EUR/kWh');
+        fd.append('Konfigurator: Ladekapazitaet', String(lastResult.capacity || ''));
+        if(lastResult.pv) fd.append('Konfigurator: PV-Anlage', lastResult.pv + (lastResult.pvKwp ? ' (' + lastResult.pvKwp + ' kWp)' : ''));
+      }
+
+      /* Anhaenge: Konfigurations-PDF + optional Fragenkatalog */
+      const summaryOn = summaryAttached && !summaryAttached.hidden;
+      if(summaryOn){
+        const doc = buildSummaryPdf();
+        if(doc) fd.append('attachment', doc.output('blob'), 'AW_PowerCube_Zusammenfassung.pdf');
+      }
+      if(katalogFile) fd.append('attachment', katalogFile, katalogFile.name);
+
+      /* Senden */
+      const btnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if(submitBtn){ submitBtn.disabled = true; submitBtn.innerHTML = 'Wird gesendet \u2026'; }
+      try{
+        const res = await fetch('https://api.web3forms.com/submit', { method:'POST', body: fd });
+        const json = await res.json().catch(() => ({}));
+        if(!res.ok || json.success === false) throw new Error(json.message || ('HTTP ' + res.status));
+        form.style.display = 'none';
+        const thanks = document.getElementById('thanks');
+        if(summaryOn){
+          const note = thanks.querySelector('.thanks-summary-note');
+          if(!note){
+            const p = document.createElement('p');
+            p.className = 'thanks-summary-note';
+            p.style.cssText = 'margin-top:10px;font-size:.92rem;color:#226CE0;font-weight:600';
+            p.innerHTML = 'Ihre Konfigurations-Zusammenfassung wurde als PDF automatisch beigefügt.';
+            thanks.appendChild(p);
+          }
+        }
+        thanks.classList.add('show');
+      }catch(err){
+        errBox.textContent = 'Ihre Anfrage konnte leider nicht gesendet werden. Bitte versuchen Sie es erneut oder schreiben Sie direkt an info@aw-automotive.de.';
+        errBox.hidden = false;
+      }finally{
+        if(submitBtn){ submitBtn.disabled = false; submitBtn.innerHTML = btnHtml; }
+      }
     });
+
+    function getFormErrorBox(){
+      let box = form.querySelector('.form-error');
+      if(!box){
+        box = document.createElement('p');
+        box.className = 'form-error';
+        box.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fdecea;color:#b3261e;font-size:.9rem;font-weight:600;text-align:center';
+        box.hidden = true;
+        const btn = form.querySelector('button[type="submit"]');
+        if(btn && btn.parentNode) btn.parentNode.insertBefore(box, btn.nextSibling);
+        else form.appendChild(box);
+      }
+      return box;
+    }
   }
 });
