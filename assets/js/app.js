@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(inp.name === 'netz'){
       const kwCond = document.getElementById('netz-kw-cond');
-      const showKw = inp.value.includes('Direktanschluss');
+      const showKw = inp.value.includes('Direkt');
       if(kwCond){
         kwCond.classList.toggle('show', showKw);
         if(!showKw){ const f = kwCond.querySelector('input[name="netz_kw"]'); if(f) f.value = ''; }
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const netz = (wizard.querySelector('input[name="netz"]:checked')||{}).value || 'CEE 5/125 A';
       const netzKw = val('netz_kw');
-      const isCee = !netz.includes('Direktanschluss');
+      const isCee = !netz.includes('Direkt');
 
       // --- Empfohlener Cube (bei CEE 5/125 A & ≤ 5 e-LKW: PowerCube 400 kW · 756 kWh) ---
       const cubeName = 'PowerCube 400 kW · 756 kWh';
@@ -335,8 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // --- Ladekapazität nach Netzanschluss ---
       // CEE 5/125 A            -> bis zu 5 e-LKW / 24 h
-      // Direktanschluss ≥150 kW -> bis zu 10 e-LKW / 24 h
-      // Direktanschluss <150 kW -> bis zu 5 e-LKW / 24 h
+      // Direkter Netzanschluss ≥150 kW -> bis zu 10 e-LKW / 24 h
+      // Direkter Netzanschluss <150 kW -> bis zu 5 e-LKW / 24 h
       const CAPACITY_NOTE = 'Abhängig vom geplanten Einsatz- und Ladeprofil der Fahrzeuge.';
       let capacityValue;
       if(isCee){
