@@ -596,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(lastResult){
         fd.append('Konfigurator: Energiebedarf', Math.round(lastResult.totalKwh).toLocaleString('de-DE') + ' kWh/Monat');
         fd.append('Konfigurator: Netzanschluss', lastResult.netz + (lastResult.netzKw ? ' (' + lastResult.netzKw + ' kW)' : ''));
-        fd.append('Konfigurator: Pay-per-Use-Rate', lastResult.rate === null ? 'Individuelles Angebot (gesonderte Konfiguration)' : lastResult.rateLabel + ' EUR/kWh');
+        fd.append('Konfigurator: Pay-per-Use-Rate', lastResult.rate === null ? 'Individuelles Angebot (gesonderte Konfiguration)' : String(lastResult.rateLabel));
         fd.append('Konfigurator: Ladekapazitaet', String(lastResult.capacity || ''));
         if(lastResult.pv) fd.append('Konfigurator: PV-Anlage', lastResult.pv + (lastResult.pvKwp ? ' (' + lastResult.pvKwp + ' kWp)' : ''));
       }
