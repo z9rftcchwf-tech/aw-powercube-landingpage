@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function truckRowHTML(n){
     const brand =
-      `<div><label>Fabrikat</label><input type="text" name="t_brand_${n}" placeholder="z. B. Volvo, Scania"></div>`;
+      `<div><label>Fabrikat</label><input type="text" name="t_brand_${n}" placeholder="z. B. MAN, Scania"></div>`;
     return `<div class="truck-row" data-row="${n}">
       <div class="idx">${n}</div>
       ${brand}
