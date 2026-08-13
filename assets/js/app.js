@@ -607,13 +607,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const doc = buildSummaryPdf();
         if(doc) fd.append('attachment', doc.output('blob'), 'AW_PowerCube_Zusammenfassung.pdf');
       }
-      if(katalogFile) fd.append('attachment', katalogFile, katalogFile.name);
+      if(katalogFile) fd.append('fragenkatalog', katalogFile, katalogFile.name);
 
       /* Senden */
       const btnHtml = submitBtn ? submitBtn.innerHTML : '';
       if(submitBtn){ submitBtn.disabled = true; submitBtn.innerHTML = 'Wird gesendet \u2026'; }
       try{
-        const res = await fetch('https://api.web3forms.com/submit', { method:'POST', headers:{ 'Accept':'application/json' }, body: fd });
+        /* Wichtig: keine Header setzen – bei Anhängen setzt der Browser den
+           korrekten multipart-Header (inkl. boundary) automatisch. */
+        const res = await fetch('https://api.web3forms.com/submit', { method:'POST', body: fd });
         const json = await res.json().catch(() => ({}));
         if(!res.ok || json.success === false) throw new Error(json.message || ('HTTP ' + res.status));
         form.style.display = 'none';
