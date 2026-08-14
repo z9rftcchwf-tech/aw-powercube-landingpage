@@ -128,7 +128,17 @@ h3{font-size:1.3rem;margin-bottom:8px}
 .btn-dark{background:var(--ink);color:#fff}
 .btn-dark:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .header-cta{display:flex;gap:10px;align-items:center}
-@media(max-width:720px){.header-cta .btn-ghost{display:none}}
+.lbl-short{display:none}
+@media(max-width:720px){
+  .header-cta{gap:6px}
+  .header-cta .btn{padding:9px 13px;font-size:.82rem;gap:6px}
+  .lbl-full{display:none}
+  .lbl-short{display:inline}
+}
+@media(max-width:380px){
+  .header-cta{gap:4px}
+  .header-cta .btn{padding:8px 10px;font-size:.78rem}
+}
 .lang-switch{display:flex;align-items:center;gap:2px;font-size:.85rem;font-weight:700;margin-right:6px;white-space:nowrap}
 .lang-switch a{color:var(--muted);text-decoration:none;padding:4px 7px;border-radius:7px;cursor:pointer;transition:color .15s}
 .lang-switch a:hover{color:var(--accent)}
