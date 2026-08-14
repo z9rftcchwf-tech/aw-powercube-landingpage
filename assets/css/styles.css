@@ -129,6 +129,12 @@ h3{font-size:1.3rem;margin-bottom:8px}
 .btn-dark:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
 .header-cta{display:flex;gap:10px;align-items:center}
 @media(max-width:720px){.header-cta .btn-ghost{display:none}}
+.lang-switch{display:flex;align-items:center;gap:2px;font-size:.85rem;font-weight:700;margin-right:6px;white-space:nowrap}
+.lang-switch a{color:var(--muted);text-decoration:none;padding:4px 7px;border-radius:7px;cursor:pointer;transition:color .15s}
+.lang-switch a:hover{color:var(--accent)}
+.lang-switch a.active{color:var(--accent);background:var(--accent-soft);cursor:default}
+.lang-switch .sep{color:#c5cbd4;font-weight:400}
+@media(max-width:720px){.lang-switch{margin-right:2px}}
 
 /* ---------- Hero (video background) ---------- */
 .hero{position:relative;background:var(--ink);color:#fff;overflow:hidden;padding:0;min-height:calc(100vh - 72px)}
