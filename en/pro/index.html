@@ -3,25 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PowerCube – AW Automotive</title>
-<link rel="icon" type="image/png" href="../assets/img/logo-aw-mark-black.png">
+<title>PowerCube Pro – AW Automotive</title>
+<link rel="icon" type="image/png" href="../../assets/img/logo-aw-mark-black.png">
 <meta name="description" content="PowerCube: mobile fast-charging infrastructure for e-trucks. Pay per Use from €0.21/kWh. Configure your Cube now.">
-<link rel="alternate" hreflang="de" href="https://z9rftcchwf-tech.github.io/aw-powercube-landingpage/">
-<link rel="alternate" hreflang="en" href="https://z9rftcchwf-tech.github.io/aw-powercube-landingpage/en/">
-<link rel="alternate" hreflang="x-default" href="https://z9rftcchwf-tech.github.io/aw-powercube-landingpage/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/styles.css">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="../../assets/css/styles.css">
 </head>
-<body class="">
+<body class="pro-locked">
+
+<div class="pro-gate" id="pro-gate" role="dialog" aria-modal="true" aria-labelledby="pro-gate-title">
+  <div class="pro-gate-box">
+    <img class="pg-logo" src="../../assets/img/logo-aw-mark-black.png" alt="AW Automotive">
+    <span class="pg-eyebrow">Restricted area</span>
+    <h1 id="pro-gate-title">PowerCube <span>Pro</span></h1>
+    <p>This area is for internal use only. Please enter the password.</p>
+    <form id="pro-gate-form" autocomplete="off">
+      <input type="password" id="pro-pass" placeholder="Password" aria-label="Password" autocomplete="current-password">
+      <button class="btn btn-primary" type="submit">Sign in</button>
+    </form>
+    <div class="pg-err" id="pro-gate-err" hidden>Invalid password. Please try again.</div>
+    <a class="pg-back" href="../">&larr; Back to the standard page</a>
+  </div>
+</div>
+
 
 <header class="site-header">
   <div class="container">
-    <a class="brand" href="#top" data-goto="0"><img class="logo-aw" src="../assets/img/logo-aw-mark-black.png" alt="AW Automotive"></a>
+    <a class="brand" href="#top" data-goto="0"><img class="logo-aw" src="../../assets/img/logo-aw-mark-black.png" alt="AW Automotive"><span class="pro-badge">Pro</span></a>
     <div class="header-cta">
-      <nav class="lang-switch" aria-label="Language selection"><a href="../" hreflang="de" title="Zur deutschen Version wechseln">DE</a><span class="sep">|</span><a class="active" aria-current="true" title="English version (active)">EN</a></nav>
-      <a class="btn btn-ghost btn-pro" href="pro/" title="Pro area – password required"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span class="lbl-full">Pro login</span></a>
+      <nav class="lang-switch" aria-label="Language selection"><a href="../../pro/" hreflang="de" title="Zur deutschen Version wechseln">DE</a><span class="sep">|</span><a class="active" aria-current="true" title="English version (active)">EN</a></nav>
+      <a class="btn btn-ghost btn-back" href="../" title="Back to the standard page" aria-label="Back to the standard page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span class="lbl-full">Standard page</span><span class="lbl-short">Standard</span></a>
       <a class="btn btn-ghost" data-goto="downloads">Downloads</a>
       <a class="btn btn-primary" data-goto="matrix"><span class="lbl-full">Configure your Cube</span><span class="lbl-short">Configure</span><span class="lbl-mini">Cube</span></a>
     </div>
@@ -38,9 +52,9 @@
 
 <!-- PANEL 0: HERO -->
 <section class="panel hero active" data-panel="hero">
-  <video class="hero-video" autoplay muted loop playsinline poster="../assets/img/video-poster.jpg">
-    <source src="../assets/video/powercube-animation.webm" type="video/webm">
-    <source src="../assets/video/powercube-animation.mp4" type="video/mp4">
+  <video class="hero-video" autoplay muted loop playsinline poster="../../assets/img/video-poster.jpg">
+    <source src="../../assets/video/powercube-animation.webm" type="video/webm">
+    <source src="../../assets/video/powercube-animation.mp4" type="video/mp4">
   </video>
   <div class="hero-overlay"></div>
   <div class="hero-inner">
@@ -76,7 +90,7 @@
 <section class="panel product" data-panel="product" id="product">
   <div class="container">
     <div class="product-grid">
-      <div class="product-media"><a class="media-zoom" href="../assets/img/powercube-feature-diagram-en.jpg" target="_blank" rel="noopener" title="Open diagram at full size"><img src="../assets/img/powercube-feature-diagram-en.jpg" alt="PowerCube – features at a glance: charging output up to 1,100 kW, storage capacity 175–1,175 kWh, hybrid system, scalable and retrofittable, bidirectional, quick to deploy"></a><div class="media-note">Tap the diagram to enlarge. The PowerCube shown is an example configuration.</div></div>
+      <div class="product-media"><a class="media-zoom" href="../../assets/img/powercube-feature-diagram-en.jpg" target="_blank" rel="noopener" title="Open diagram at full size"><img src="../../assets/img/powercube-feature-diagram-en.jpg" alt="PowerCube – features at a glance: charging output up to 1,100 kW, storage capacity 175–1,175 kWh, hybrid system, scalable and retrofittable, bidirectional, quick to deploy"></a><div class="media-note">Tap the diagram to enlarge. The PowerCube shown is an example configuration.</div></div>
       <div>
         <span class="eyebrow">The product</span>
         <h2>PowerCube</h2>
@@ -175,6 +189,15 @@
               <label class="choice-card"><input type="radio" name="netz" value="Direct grid connection"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg><div><div class="t">Direct grid connection</div></div></label>
             </div>
           </div>
+                    <div class="field">
+            <label>Required charging points <span class="hint">(Pro selection · affects the variant chosen)</span></label>
+            <div class="choices">
+              <label class="choice"><input type="radio" name="ladepunkte" value="" checked>Automatic<span class="sub">cheapest matching variant</span></label>
+              <label class="choice"><input type="radio" name="ladepunkte" value="2">2 charging points</label>
+              <label class="choice"><input type="radio" name="ladepunkte" value="4">4 charging points</label>
+              <label class="choice"><input type="radio" name="ladepunkte" value="8">8 charging points</label>
+            </div>
+          </div>
           <div class="field cond" id="netz-kw-cond"><label>Max. connection capacity <span class="hint">(kW, if known)</span></label><input type="number" min="0" name="netz_kw" placeholder="e.g. 150"></div>
           <div class="wizard-nav">
             <button class="btn btn-ghost" data-prev>Back</button>
@@ -190,7 +213,7 @@
           </div>
           <div class="result show" id="result-panel">
             <div class="result-cube" id="result-cube">
-              <div><img src="../assets/img/truck_cube.png" alt="e-truck charging at the PowerCube"></div>
+              <div><img src="../../assets/img/truck_cube.png" alt="e-truck charging at the PowerCube"></div>
               <div>
                 <div class="tagline">Recommended charging solution</div>
                 <h3 id="res-cube-name">PowerCube 400 kW · 756 kWh</h3>
@@ -204,11 +227,25 @@
               </div>
             </div>
 
+
+            <div class="result-cube result-variant" id="result-variant">
+              <div class="rv-img">
+                <img src="../../assets/img/powercube-loesungsbeispiel.jpg" alt="PowerCube charging solution – solution example">
+                <span class="img-note">Solution example</span>
+              </div>
+              <div>
+                <div class="tagline">Recommended charging solution <span class="var-badge" id="res-var-badge">V2</span></div>
+                <h3 id="res-var-name">PowerCube V2</h3>
+                <p id="res-var-desc"></p>
+                <div class="mini-specs" id="res-var-specs"></div>
+              </div>
+            </div>
+
             <div class="result-video" id="result-video">
               <div class="tagline">Your individual charging solution</div>
               <h3>We configure your PowerCube to fit precisely</h3>
               <div class="rv-frame">
-                <video id="result-video-el" src="../assets/video/powercube-ladeloesung.mp4" poster="../assets/video/powercube-ladeloesung-poster.jpg" muted loop playsinline preload="metadata"></video>
+                <video id="result-video-el" src="../../assets/video/powercube-ladeloesung.mp4" poster="../../assets/video/powercube-ladeloesung-poster.jpg" muted loop playsinline preload="metadata"></video>
               </div>
               <p class="rv-cap">The PowerCube is modular and can be flexibly adapted to your deployment and charging profile – from storage size and charging power to the grid connection. Based on a personal consultation, we will create a tailored concept for you.</p>
             </div>
@@ -295,7 +332,7 @@
         <div class="ci-row"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>Max-Planck-Str. 23 · 06796 Sandersdorf-Brehna · Germany</span></div>
         <div class="ci-row"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg><a href="https://www.aw-automotive.de" target="_blank" rel="noopener">www.aw-automotive.de</a></div>
         <div class="qr-block">
-          <img src="../assets/img/qr-aw-website.png" alt="QR code linking to the AW Automotive website">
+          <img src="../../assets/img/qr-aw-website.png" alt="QR code linking to the AW Automotive website">
           <div class="cap">Visit our website: www.aw-automotive.de</div>
         </div>
       </div>
@@ -318,9 +355,9 @@
       <p class="lead">Download the product presentations and the questionnaire. The completed questionnaire is the basis for the detailed design of your ideal charging solution.</p>
     </div>
     <div class="dl-grid">
-      <a class="dl-card" href="../downloads/AW_PowerCube_Technology_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M12 17v3M8 20h8"/></svg><div><div class="t">PowerCube Technology</div><div class="d">Scalable fast-charging system for e-trucks and e-buses (PDF)</div></div></a>
-      <a class="dl-card" href="../downloads/AW_PowerCube_PayPerUse_FreightCarriers_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M12 17v3M8 20h8"/></svg><div><div class="t">PowerCube Pay per Use for Freight Carriers</div><div class="d">Electrify your fleet without tying up capital (PDF)</div></div></a>
-      <a class="dl-card" href="../downloads/AW_PowerCube_Questionnaire_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg><div><div class="t">Questionnaire</div><div class="d">Deployment, site assessment &amp; configuration (PDF)</div></div></a>
+      <a class="dl-card" href="../../downloads/AW_PowerCube_Technology_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M12 17v3M8 20h8"/></svg><div><div class="t">PowerCube Technology</div><div class="d">Scalable fast-charging system for e-trucks and e-buses (PDF)</div></div></a>
+      <a class="dl-card" href="../../downloads/AW_PowerCube_PayPerUse_FreightCarriers_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M12 17v3M8 20h8"/></svg><div><div class="t">PowerCube Pay per Use for Freight Carriers</div><div class="d">Electrify your fleet without tying up capital (PDF)</div></div></a>
+      <a class="dl-card" href="../../downloads/AW_PowerCube_Questionnaire_EN.pdf" download><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg><div><div class="t">Questionnaire</div><div class="d">Deployment, site assessment &amp; configuration (PDF)</div></div></a>
     </div>
     <div class="dl-note"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>The questionnaire is the <strong>basis for the detailed design</strong> of the charging solution that fits you best. Ideally, complete it before AW Automotive contacts you – so we can dive into the project details right away.</span></div>
   </div>
@@ -331,9 +368,9 @@
 <footer class="site-footer">
   <div class="container">
     <div class="footer-top">
-      <div><img class="logo-aw" src="../assets/img/logo-aw-mark-white.png" alt="AW Automotive" style="height:38px"></div>
+      <div><img class="logo-aw" src="../../assets/img/logo-aw-mark-white.png" alt="AW Automotive" style="height:38px"></div>
       <div style="display:flex;gap:22px;flex-wrap:wrap">
-        <a data-goto="vorteile">Benefits</a><a data-goto="product">Product</a><a data-goto="matrix">Configurator</a><a data-goto="kontakt">Contact</a><a data-goto="downloads">Downloads</a><a href="pro/">Pro login</a>
+        <a data-goto="vorteile">Benefits</a><a data-goto="product">Product</a><a data-goto="matrix">Configurator</a><a data-goto="kontakt">Contact</a><a data-goto="downloads">Downloads</a>
       </div>
     </div>
     <div class="footer-legal">
@@ -343,7 +380,8 @@
   </div>
 </footer>
 
+<script src="../../assets/js/pro-gate.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="../assets/js/app-en.js"></script>
+<script src="../../assets/js/app-pro-en.js"></script>
 </body>
 </html>

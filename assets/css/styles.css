@@ -135,9 +135,16 @@ h3{font-size:1.3rem;margin-bottom:8px}
   .lbl-full{display:none}
   .lbl-short{display:inline}
 }
+@media(max-width:460px){
+  .header-cta{gap:6px}
+  .header-cta .btn{padding:8px 10px;font-size:.76rem;gap:5px}
+  .lang-switch{margin-right:2px}
+  .lang-switch a{padding:6px 9px;font-size:.74rem}
+}
 @media(max-width:380px){
-  .header-cta{gap:7px}
-  .header-cta .btn{padding:8px 10px;font-size:.78rem}
+  .header-cta{gap:5px}
+  .header-cta .btn{padding:7px 9px;font-size:.72rem}
+  .lang-switch a{padding:5px 8px;font-size:.7rem}
 }
 
 /* Sprachumschalter als segmentierter Schalter */
@@ -521,3 +528,118 @@ h3{font-size:1.3rem;margin-bottom:8px}
 }
 .sa-view:hover{background:var(--accent-ink)}
 @media(max-width:520px){.summary-attached{flex-wrap:wrap}.sa-view{width:100%}}
+
+/* ============================================================
+   PRO-BEREICH — Zugangsschutz, Pro-Badge, Variantenergebnis
+   ============================================================ */
+body.pro-locked > header,
+body.pro-locked > main,
+body.pro-locked > footer,
+body.pro-locked > .panel-dots,
+body.pro-locked > .panel-back { display: none !important; }
+body.pro-locked { overflow: hidden; }
+
+.pro-gate{
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: radial-gradient(120% 120% at 50% 0%, #1b2430 0%, #0b1017 60%, #05080c 100%);
+}
+.pro-gate-box{
+  width: min(420px, 100%); background: #fff; border-radius: 18px;
+  padding: 34px 30px 26px; text-align: center;
+  box-shadow: 0 30px 80px rgba(0,0,0,.45);
+}
+.pro-gate-box.shake{ animation: pg-shake .4s; }
+@keyframes pg-shake{
+  0%,100%{ transform: translateX(0); }
+  20%{ transform: translateX(-8px); } 40%{ transform: translateX(8px); }
+  60%{ transform: translateX(-5px); } 80%{ transform: translateX(5px); }
+}
+.pro-gate-box .pg-logo{ height: 34px; width: auto; margin-bottom: 18px; }
+.pro-gate-box .pg-eyebrow{
+  display: block; font-size: .74rem; letter-spacing: .14em; text-transform: uppercase;
+  font-weight: 700; color: var(--accent); margin-bottom: 6px;
+}
+.pro-gate-box h1{ font-size: 1.6rem; margin: 0 0 8px; line-height: 1.15; }
+.pro-gate-box h1 span{ color: var(--accent); }
+.pro-gate-box p{ color: var(--muted); font-size: .93rem; margin: 0 0 20px; }
+.pro-gate-box form{ display: flex; flex-direction: column; gap: 10px; }
+.pro-gate-box input[type="password"]{
+  width: 100%; padding: 13px 15px; font: inherit; font-size: 1rem;
+  border: 1.5px solid #d7dbe2; border-radius: 10px; background: #fbfcfd;
+}
+.pro-gate-box input[type="password"]:focus{
+  outline: none; border-color: var(--accent); background: #fff;
+  box-shadow: 0 0 0 3px rgba(34,108,224,.14);
+}
+.pro-gate-box .btn{ justify-content: center; width: 100%; }
+.pg-err{
+  margin-top: 12px; font-size: .88rem; font-weight: 600; color: #c0392b;
+  background: #fdecea; border-radius: 8px; padding: 9px 12px;
+}
+.pg-back{
+  display: inline-block; margin-top: 18px; font-size: .86rem;
+  color: var(--muted); text-decoration: none;
+}
+.pg-back:hover{ color: var(--accent); }
+
+.pro-badge{
+  display: inline-block; margin-left: 9px; padding: 3px 9px; border-radius: 999px;
+  background: var(--accent); color: #fff; font-size: .68rem; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; vertical-align: middle;
+}
+
+/* Variantenergebnis (V2 / V3) */
+.result-variant{ display: none; }
+.result-variant.show{ display: grid; align-items: start; }
+.result-variant > div:last-child{ align-self: center; }
+.result-variant .rv-img{ position: relative; align-self: center; }
+.result-variant .rv-img img{ width: 100%; height: auto; border-radius: 12px; display: block; }
+.result-variant .img-note{
+  position: absolute; left: 12px; bottom: 12px;
+  background: rgba(10,14,20,.78); color: #fff; font-size: .74rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px;
+}
+.var-badge{
+  display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+  background: var(--accent); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .04em;
+}
+@media (max-width: 720px){
+  .pro-gate-box{ padding: 28px 22px 22px; }
+  .pro-gate-box h1{ font-size: 1.4rem; }
+  .pro-badge{ font-size: .6rem; padding: 2px 7px; margin-left: 6px; }
+}
+
+/* Pro-Login-Button in der Kopfzeile */
+.btn-pro .ic{ width: 16px; height: 16px; }
+@media (max-width: 860px){
+  .btn-pro .lbl-full{ display: none; }
+  .btn-pro{ padding-left: 11px; padding-right: 11px; }
+}
+
+/* Kompakte Kopfzeile auf schmalen Smartphones (nach allen Basisregeln) */
+@media(max-width:460px){
+  .site-header .container{padding-left:14px;padding-right:14px}
+  .header-cta{gap:6px}
+  .header-cta .btn{padding:8px 10px;font-size:.76rem;gap:5px}
+  .lang-switch{margin-right:2px;border-width:1px}
+  .lang-switch a{padding:6px 8px;font-size:.72rem}
+}
+@media(max-width:380px){
+  .header-cta{gap:5px}
+  .header-cta .btn{padding:7px 9px;font-size:.72rem}
+  .lang-switch a{padding:5px 7px;font-size:.68rem}
+}
+
+/* Kopfzeile Pro-Bereich: sehr schmale Displays */
+.lbl-mini{display:none}
+@media(max-width:520px){
+  .btn-back .lbl-full,.btn-back .lbl-short{display:none}
+  .btn-back{padding-left:11px;padding-right:11px}
+  .btn-back .ic{width:16px;height:16px}
+}
+@media(max-width:460px){
+  .header-cta .btn .lbl-short{display:none}
+  .header-cta .btn .lbl-mini{display:inline}
+}
