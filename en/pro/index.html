@@ -36,7 +36,8 @@
     <div class="header-cta">
       <nav class="lang-switch" aria-label="Language selection"><a href="../../pro/" hreflang="de" title="Zur deutschen Version wechseln">DE</a><span class="sep">|</span><a class="active" aria-current="true" title="English version (active)">EN</a></nav>
       <a class="btn btn-ghost btn-back" href="../" title="Back to the standard page" aria-label="Back to the standard page"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span class="lbl-full">Standard page</span><span class="lbl-short">Standard</span></a>
-      <a class="btn btn-ghost" data-goto="downloads">Downloads</a>
+      <a class="btn btn-ghost btn-qc" data-goto="quickcheck"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 19h6"/></svg><span class="lbl-full">PPU Quick Check</span><span class="lbl-short">Quick Check</span><span class="lbl-mini">PPU</span></a>
+      <a class="btn btn-ghost btn-dl" data-goto="downloads" title="Download documents" aria-label="Download documents"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg><span class="lbl-full">Downloads</span><span class="lbl-short">Downloads</span></a>
       <a class="btn btn-primary" data-goto="matrix"><span class="lbl-full">Configure your Cube</span><span class="lbl-short">Configure</span><span class="lbl-mini">Cube</span></a>
     </div>
   </div>
@@ -99,6 +100,77 @@
         <p style="margin-top:18px;font-size:.85rem;color:var(--muted)">*When operated on a CEE 5/125 A socket.</p>
         <div class="panel-nav"><button class="btn btn-primary" data-goto="matrix"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg> Find your Cube now</button></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- PANEL: PPU QUICK CHECK -->
+<section class="panel quickcheck" data-panel="quickcheck" id="quickcheck">
+  <div class="container">
+    <div class="center">
+      <span class="eyebrow">PPU Quick Check</span>
+      <h2>Enter your charging volume, read off the PPU price</h2>
+      <p class="lead">Already know your monthly charging volume? Enter the figure and you will immediately see the matching configuration level and the corresponding price per charged kilowatt-hour.</p>
+    </div>
+
+    <div class="qc-card">
+      <form id="qc-form" autocomplete="off" novalidate>
+        <div class="qc-input-row">
+          <div class="field qc-field">
+            <label for="qc-kwh">Monthly charging volume <span class="hint">(kWh per month)</span></label>
+            <div class="qc-inputwrap">
+              <input type="number" id="qc-kwh" name="qc_kwh" inputmode="numeric" min="0" step="500" placeholder="e.g. 70000">
+              <span class="qc-unit">kWh</span>
+            </div>
+          </div>
+          <button class="btn btn-primary qc-submit" type="submit"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 19h6"/></svg> Calculate PPU price</button>
+        </div>
+
+        <div class="qc-presets">
+          <span class="qc-presets-lbl">Typical values:</span>
+          <button type="button" class="qc-chip" data-kwh="21000">21,000</button>
+          <button type="button" class="qc-chip" data-kwh="28000">28,000</button>
+          <button type="button" class="qc-chip" data-kwh="70000">70,000</button>
+          <button type="button" class="qc-chip" data-kwh="78400">78,400</button>
+          <button type="button" class="qc-chip" data-kwh="112000">112,000</button>
+        </div>
+
+        <div class="qc-err" id="qc-err" hidden>Please enter a monthly charging volume in kWh.</div>
+      </form>
+
+      <details class="qc-helper">
+        <summary><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7M12 17h.01"/></svg> Volume unknown? Calculate it from your number of e-trucks</summary>
+        <div class="qc-helper-body">
+          <div class="qc-helper-row">
+            <div class="field"><label for="qc-lkw">Number of e-trucks</label><input type="number" id="qc-lkw" inputmode="numeric" min="1" step="1" placeholder="e.g. 10"></div>
+            <div class="field"><label for="qc-lade">kWh per charging session</label><input type="number" id="qc-lade" inputmode="numeric" min="1" step="10" value="350"></div>
+            <div class="field"><label for="qc-tage">Operating days / month</label><input type="number" id="qc-tage" inputmode="numeric" min="1" step="1" value="20"></div>
+          </div>
+          <p class="qc-helper-out" id="qc-helper-out">Results in a monthly charging volume of <strong>&ndash;</strong>.</p>
+          <button type="button" class="btn btn-ghost" id="qc-helper-btn">Apply value and calculate</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="qc-result" id="qc-result" hidden>
+      <div class="qc-price" id="qc-price">
+        <div class="qc-price-lbl" id="qc-price-lbl">PPU price per charged kilowatt-hour</div>
+        <div class="qc-price-val" id="qc-price-val">&ndash;</div>
+        <div class="qc-price-sub" id="qc-price-sub"></div>
+      </div>
+      <div class="qc-facts" id="qc-facts"></div>
+      <div class="qc-note" id="qc-note" hidden></div>
+      <div class="qc-actions">
+        <button class="btn btn-primary" type="button" data-goto="matrix"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg> Full configuration</button>
+        <button class="btn btn-ghost" type="button" data-goto="kontakt">Request consultation</button>
+      </div>
+      <div class="ppu-disclaimer"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>All prices are net and non-binding. The Quick Check uses the verified calculation matrix and <strong>does not include an electricity supply contract</strong>. The exact PPU fee is determined only after a complete requirements analysis.</span></div>
+    </div>
+
+    <div class="qc-overview">
+      <h3 class="qc-ov-title">Overview of configuration levels</h3>
+      <div class="qc-table-wrap"><table class="qc-table"><thead><tr><th>Level</th><th>Technology</th><th>Charging sessions / 24 h</th><th>kWh / month</th><th>PPU price</th></tr></thead><tbody id="qc-tbody"></tbody></table></div>
+      <div class="qc-cards" id="qc-cards"></div>
     </div>
   </div>
 </section>
@@ -370,7 +442,7 @@
     <div class="footer-top">
       <div><img class="logo-aw" src="../../assets/img/logo-aw-mark-white.png" alt="AW Automotive" style="height:38px"></div>
       <div style="display:flex;gap:22px;flex-wrap:wrap">
-        <a data-goto="vorteile">Benefits</a><a data-goto="product">Product</a><a data-goto="matrix">Configurator</a><a data-goto="kontakt">Contact</a><a data-goto="downloads">Downloads</a>
+        <a data-goto="vorteile">Benefits</a><a data-goto="product">Product</a><a data-goto="quickcheck">Quick Check</a><a data-goto="matrix">Configurator</a><a data-goto="kontakt">Contact</a><a data-goto="downloads">Downloads</a>
       </div>
     </div>
     <div class="footer-legal">

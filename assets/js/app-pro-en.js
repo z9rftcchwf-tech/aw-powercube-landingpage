@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.classList.add('panel-mode');
 
   // Build dots
-  const dotLabels = { hero:'Start', vorteile:'Benefits', product:'Product', matrix:'Configurator', kontakt:'Contact', downloads:'Downloads' };
+  const dotLabels = { hero:'Start', vorteile:'Benefits', product:'Product', quickcheck:'PPU Quick Check', matrix:'Configurator', kontakt:'Contact', downloads:'Downloads' };
   panels.forEach((p, i) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -784,3 +784,194 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+
+/* ============================================================
+   PPU QUICK-CHECK — monatliche Lademenge eingeben, PPU-Preis
+   erhalten. Nutzt dieselbe Berechnungsmatrix wie der
+   Konfigurator (VARIANTEN, waehleVariante, variantenPreis).
+   ============================================================ */
+(function () {
+  var T = {
+    loc: 'en-US',
+    unit: '\u20ac/kWh',
+    eurKwh: ' \u20ac/kWh',
+    bis: '\u2013',
+    lp: ' charge points',
+    netz: ' kW grid',
+    kwhMonat: ' kWh / month',
+    approx: 'approx. ',
+    priceLbl: 'PPU price per charged kilowatt-hour',
+    priceSub: 'Configuration level %v \u00b7 calculated for %k kWh per month',
+    fInput: 'Your charging volume',
+    fBasis: 'Calculation basis',
+    fLevel: 'Configuration level',
+    fTech: 'Technology',
+    fTrucks: 'Charging sessions / 24 h',
+    fMonth: 'Monthly invoice amount',
+    fEst: 'Equates to roughly \u2026 e-trucks',
+    noCalcLbl: 'Customer-specific configuration',
+    noCalcVal: 'individual',
+    noCalcSub: 'There is no standard case in the calculation matrix for %s kWh per month.',
+    noteOut: '<strong>Your charging volume lies outside the six standard configuration levels.</strong> Below 21,000 kWh and above 112,000 kWh per month we design the charging solution individually \u2013 please get in touch.',
+    noteMin: 'Your charging volume of %s kWh lies between two configuration levels. The next larger level %v is therefore calculated with its minimum volume of %k kWh per month.',
+    helperOut: 'Results in a monthly charging volume of %s.',
+    cTruck: 'Charging sessions / 24 h',
+    cKwh: 'kWh / month',
+    cTech: 'Technology'
+  };
+
+  function eurFmt(n) { return Math.round(n).toLocaleString(T.loc) + '\u00a0\u20ac'; }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('qc-form');
+    if (!form) return;
+
+    var inKwh   = document.getElementById('qc-kwh');
+    var errBox  = document.getElementById('qc-err');
+    var resBox  = document.getElementById('qc-result');
+    var priceEl = document.getElementById('qc-price');
+    var valEl   = document.getElementById('qc-price-val');
+    var lblEl   = document.getElementById('qc-price-lbl');
+    var subEl   = document.getElementById('qc-price-sub');
+    var factsEl = document.getElementById('qc-facts');
+    var noteEl  = document.getElementById('qc-note');
+
+    /* ---------- Übersichtstabelle und Mobil-Karten aufbauen ---------- */
+    var tb = document.getElementById('qc-tbody');
+    var cards = document.getElementById('qc-cards');
+    VARIANTEN.forEach(function (v) {
+      var pMin = variantenPreis(v, v.kwhMin);
+      var pMax = variantenPreis(v, v.kwhMax);
+      var preis = (Math.abs(pMin - pMax) < 1e-9)
+        ? fmtPreis(pMin) + T.eurKwh
+        : fmtPreis(pMax) + T.bis + fmtPreis(pMin) + T.eurKwh;
+      var menge = (v.kwhMin === v.kwhMax)
+        ? fmtKwh(v.kwhMin)
+        : fmtKwh(v.kwhMin) + '\u2013' + fmtKwh(v.kwhMax);
+      var technik = v.format + ' \u00b7 ' + v.ladepunkte + T.lp + ' \u00b7 ' + v.netzKw + T.netz;
+
+      if (tb) {
+        var tr = document.createElement('tr');
+        tr.dataset.vid = v.id;
+        tr.innerHTML = '<td class="qc-t-badge">' + v.badge + '</td><td>' + technik
+          + '</td><td>' + v.lvMin + '\u2013' + v.lvMax + '</td><td>' + menge
+          + '</td><td class="qc-t-price">' + preis + '</td>';
+        tb.appendChild(tr);
+      }
+      if (cards) {
+        var c = document.createElement('div');
+        c.className = 'qc-mcard';
+        c.dataset.vid = v.id;
+        c.innerHTML = '<div class="qc-mc-head"><span class="qc-mc-badge">' + v.badge
+          + '</span><span class="qc-mc-price">' + preis + '</span></div>'
+          + '<div class="qc-mc-rows">'
+          + '<div><span>' + T.cTruck + '</span><strong>' + v.lvMin + '\u2013' + v.lvMax + '</strong></div>'
+          + '<div><span>' + T.cKwh + '</span><strong>' + menge + '</strong></div>'
+          + '<div><span>' + T.cTech + '</span><strong>' + technik + '</strong></div>'
+          + '</div>';
+        cards.appendChild(c);
+      }
+    });
+
+    function markiere(id) {
+      [].forEach.call(document.querySelectorAll('#qc-tbody tr, #qc-cards .qc-mcard'), function (el) {
+        el.classList.toggle('is-sel', !!id && el.dataset.vid === id);
+      });
+    }
+
+    /* ---------- Umrechnungshilfe: Anzahl e-LKW -> kWh ---------- */
+    var hLkw = document.getElementById('qc-lkw');
+    var hLade = document.getElementById('qc-lade');
+    var hTage = document.getElementById('qc-tage');
+    var hOut = document.getElementById('qc-helper-out');
+    var hBtn = document.getElementById('qc-helper-btn');
+
+    function helperKwh() {
+      var a = parseFloat((hLkw || {}).value) || 0;
+      var b = parseFloat((hLade || {}).value) || 0;
+      var c = parseFloat((hTage || {}).value) || 0;
+      return a * b * c;
+    }
+    function helperUpdate() {
+      var k = helperKwh();
+      if (hOut) hOut.innerHTML = T.helperOut.replace('%s', '<strong>' + (k ? fmtKwh(k) + T.kwhMonat : '\u2013') + '</strong>');
+      if (hBtn) hBtn.disabled = !k;
+    }
+    [hLkw, hLade, hTage].forEach(function (el) { if (el) el.addEventListener('input', helperUpdate); });
+    helperUpdate();
+    if (hBtn) hBtn.addEventListener('click', function () {
+      var k = helperKwh();
+      if (!k) return;
+      inKwh.value = Math.round(k);
+      berechne();
+    });
+
+    /* ---------- Schnellauswahl ---------- */
+    [].forEach.call(document.querySelectorAll('.qc-chip'), function (b) {
+      b.addEventListener('click', function () {
+        inKwh.value = b.dataset.kwh;
+        [].forEach.call(document.querySelectorAll('.qc-chip'), function (x) { x.classList.remove('is-sel'); });
+        b.classList.add('is-sel');
+        berechne();
+      });
+    });
+
+    /* ---------- Berechnung ---------- */
+    function zeile(k, v) { return '<div class="qc-fact"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>'; }
+
+    function berechne() {
+      var kwh = parseFloat(String(inKwh.value).replace(/[.\s]/g, '').replace(',', '.')) || 0;
+      if (kwh <= 0) {
+        if (errBox) errBox.hidden = false;
+        resBox.hidden = true;
+        markiere(null);
+        return;
+      }
+      if (errBox) errBox.hidden = true;
+
+      var a = waehleVariante(kwh, 0, '');
+      resBox.hidden = false;
+      noteEl.hidden = true;
+
+      if (!a) {
+        priceEl.classList.add('is-empty');
+        lblEl.textContent = T.noCalcLbl;
+        valEl.innerHTML = T.noCalcVal;
+        subEl.textContent = T.noCalcSub.replace('%s', fmtKwh(kwh));
+        factsEl.innerHTML = zeile(T.fInput, fmtKwh(kwh) + T.kwhMonat)
+          + zeile(T.fEst, T.approx + Math.max(1, Math.round(kwh / 7000)));
+        noteEl.hidden = false;
+        noteEl.innerHTML = T.noteOut;
+        markiere(null);
+        try { resBox.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+        return;
+      }
+
+      var v = a.v, basis = a.kwhRechnung, rate = variantenPreis(v, basis);
+      priceEl.classList.remove('is-empty');
+      lblEl.textContent = T.priceLbl;
+      valEl.innerHTML = fmtPreis(rate) + ' <small>' + T.unit + '</small>';
+      subEl.textContent = T.priceSub.replace('%v', v.badge).replace('%k', fmtKwh(basis));
+
+      factsEl.innerHTML =
+          zeile(T.fInput, fmtKwh(kwh) + T.kwhMonat)
+        + zeile(T.fBasis, fmtKwh(basis) + T.kwhMonat)
+        + zeile(T.fLevel, v.badge + ' \u00b7 ' + v.format)
+        + zeile(T.fTech, v.ladepunkte + T.lp + ' \u00b7 ' + v.netzKw + T.netz + ' \u00b7 ' + fmtKwh(v.speicher) + ' kWh')
+        + zeile(T.fTrucks, v.lvMin + '\u2013' + v.lvMax)
+        + zeile(T.fMonth, T.approx + eurFmt(rate * basis));
+
+      if (a.mindest) {
+        noteEl.hidden = false;
+        noteEl.innerHTML = T.noteMin.replace('%s', fmtKwh(kwh)).replace('%k', fmtKwh(basis)).replace('%v', v.badge);
+      }
+      markiere(v.id);
+      try { resBox.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+    }
+
+    form.addEventListener('submit', function (e) { e.preventDefault(); berechne(); });
+    inKwh.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); berechne(); } });
+  });
+})();
+
