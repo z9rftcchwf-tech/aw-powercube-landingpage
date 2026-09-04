@@ -17,9 +17,10 @@
                    / (1 - (1 + i/12)^-term)
 
    If the monthly energy volume is below the lowest or above the
-   highest volume in the matrix - or falls in a gap between two
-   variants - the customer-specific variant is shown, exactly as on
-   the standard page.
+   highest volume in the matrix, the customer-specific variant is shown,
+   exactly as on the standard page. If it falls into a gap between two
+   variants, the next larger variant is used and priced at its minimum
+   monthly volume.
    ---------------------------------------------------------------- */
 var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0.20 };
 
@@ -43,22 +44,51 @@ function variantenPreis(v, kwh) {
     + PPU_KONST.spirii + PPU_KONST.audi + PPU_KONST.monitoring + PPU_KONST.strom;
 }
 
+/* Variant selection per calculation matrix.
+   Returns { v: variant, kwhRechnung: volume used for pricing, mindest: true/false }
+   or null when no matrix entry applies.
+   If the volume falls into a gap between two variants, the next larger
+   variant is used and priced at its minimum monthly volume. */
 function waehleVariante(kwh, netzKwVerfuegbar, ladepunkte) {
-  var kandidaten = VARIANTEN.filter(function (v) { return kwh >= v.kwhMin && kwh <= v.kwhMax; });
-  if (!kandidaten.length) return null;
-  if (ladepunkte) {
-    var n = parseInt(ladepunkte, 10);
-    var exakt = kandidaten.filter(function (v) { return v.ladepunkte === n; });
-    kandidaten = exakt.length ? exakt : kandidaten.filter(function (v) { return v.ladepunkte >= n; });
-    if (!kandidaten.length) return null;
+  if (!kwh) return null;
+  var alleMin = VARIANTEN.map(function (v) { return v.kwhMin; });
+  var alleMax = VARIANTEN.map(function (v) { return v.kwhMax; });
+  var globalMin = Math.min.apply(null, alleMin);
+  var globalMax = Math.max.apply(null, alleMax);
+  // Below the smallest or above the largest volume -> customer-specific
+  if (kwh < globalMin || kwh > globalMax) return null;
+
+  function filtern(liste) {
+    var k = liste.slice();
+    if (ladepunkte) {
+      var n = parseInt(ladepunkte, 10);
+      var exakt = k.filter(function (v) { return v.ladepunkte === n; });
+      k = exakt.length ? exakt : k.filter(function (v) { return v.ladepunkte >= n; });
+    }
+    if (netzKwVerfuegbar > 0) {
+      k = k.filter(function (v) { return v.netzKw <= netzKwVerfuegbar; });
+    }
+    return k;
   }
-  if (netzKwVerfuegbar > 0) {
-    kandidaten = kandidaten.filter(function (v) { return v.netzKw <= netzKwVerfuegbar; });
-    if (!kandidaten.length) return null;
+
+  // 1) Direct match with a volume band
+  var direkt = filtern(VARIANTEN.filter(function (v) { return kwh >= v.kwhMin && kwh <= v.kwhMax; }));
+  if (direkt.length) {
+    var best = direkt.reduce(function (a, b) {
+      return variantenPreis(a, kwh) <= variantenPreis(b, kwh) ? a : b;
+    });
+    return { v: best, kwhRechnung: kwh, mindest: false };
   }
-  return kandidaten.reduce(function (a, b) {
-    return variantenPreis(a, kwh) <= variantenPreis(b, kwh) ? a : b;
+
+  // 2) Gap -> next larger variant, priced at its minimum volume
+  var groesser = filtern(VARIANTEN.filter(function (v) { return v.kwhMin > kwh; }));
+  if (!groesser.length) return null;
+  var naechsteMin = Math.min.apply(null, groesser.map(function (v) { return v.kwhMin; }));
+  var stufe = groesser.filter(function (v) { return v.kwhMin === naechsteMin; });
+  var bestG = stufe.reduce(function (a, b) {
+    return variantenPreis(a, naechsteMin) <= variantenPreis(b, naechsteMin) ? a : b;
   });
+  return { v: bestG, kwhRechnung: naechsteMin, mindest: true };
 }
 
 function fmtKwh(n) { return Math.round(n).toLocaleString('en-US'); }
@@ -402,7 +432,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const netzKwVerfuegbar = kwEingabe > 0 ? kwEingabe : (isCee ? 86 : 0);
 
       // --- Variant selection per the calculation matrix ---
-      const variante = waehleVariante(totalKwh, netzKwVerfuegbar, ladepunkte);
+      const auswahl  = waehleVariante(totalKwh, netzKwVerfuegbar, ladepunkte);
+      const variante = auswahl ? auswahl.v : null;
+      const rechenKwh = auswahl ? auswahl.kwhRechnung : totalKwh;
+      const istMindest = auswahl ? auswahl.mindest : false;
 
       const CAPACITY_NOTE = 'Depends on the planned deployment and charging profile of the vehicles.';
       const ppuBox    = document.getElementById('ppu-box');
@@ -427,8 +460,8 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryCapacity = 'Part of the separate PowerCube configuration';
         summaryCapacityNote = '';
       } else {
-        rate = variantenPreis(variante, totalKwh);
-        rateLabel = '\u20ac' + fmtPreis(rate) + '/kWh';
+        rate = variantenPreis(variante, rechenKwh);
+        rateLabel = '\u20ac' + fmtPreis(rate) + '/kWh' + (istMindest ? ' (minimum volume ' + fmtKwh(rechenKwh) + ' kWh / month)' : '');
         summaryCapacity = variante.lvMin + '-' + variante.lvMax + ' charging sessions / 24 h';
         if(videoBlock) videoBlock.classList.remove('show');
         if(videoEl){ try { videoEl.pause(); } catch(e){} }
@@ -438,7 +471,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const lbl = document.querySelector('#ppu-box .lbl');
         if(lbl) lbl.textContent = 'Price indication per calculation matrix \u00b7 variant ' + variante.badge;
         const from = document.querySelector('#ppu-box .ppu-from');
-        if(from) from.textContent = 'Calculated for ' + fmtKwh(totalKwh) + ' kWh / month \u00b7 Pay per Use, billed per kWh charged';
+        if(from) from.textContent = istMindest
+          ? 'Calculated for the minimum volume of ' + fmtKwh(rechenKwh) + ' kWh / month (your demand: ' + fmtKwh(totalKwh) + ' kWh / month) \u00b7 Pay per Use, billed per kWh charged'
+          : 'Calculated for ' + fmtKwh(totalKwh) + ' kWh / month \u00b7 Pay per Use, billed per kWh charged';
 
         if(variante.id === 'V1'){
           cubeName = 'PowerCube 400 kW \u00b7 756 kWh';

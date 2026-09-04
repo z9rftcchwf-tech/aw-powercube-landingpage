@@ -9,8 +9,8 @@
    Energiebedarf (kWh/Monat) = Summe( Anzahl e-LKW × Fahrtstrecke km/Tag × Einsatztage/Monat ),  1 km = 1 kWh.
    Staffelung:
      < 24.000 kWh            -> keine belastbare Berechnung (Beratung)
-     24.000 – < 30.400 kWh   -> ab 0,27 €/kWh
-     30.400 – < 38.000 kWh   -> ab 0,22 €/kWh
+     24.000 – < 30.400 kWh   -> ab 0,11 €/kWh
+     30.400 – < 38.000 kWh   -> ab 0,11 €/kWh
      38.000 – < 45.000 kWh   -> ab 0,18 €/kWh
      ≥ 45.000 kWh            -> keine belastbare Berechnung (Beratung)
    Rückgabe: Zahl (€/kWh) oder null, wenn keine Berechnung möglich ist. */
@@ -18,8 +18,8 @@ function ppuRate(kwh){
   if(kwh < 24000) return null;
   if(kwh >= 45000) return null;
   if(kwh >= 38000) return 0.18;
-  if(kwh >= 30400) return 0.22;
-  if(kwh >= 24000) return 0.27;
+  if(kwh >= 30400) return 0.11;
+  if(kwh >= 24000) return 0.11;
   return null;
 }
 

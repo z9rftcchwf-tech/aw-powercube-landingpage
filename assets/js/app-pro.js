@@ -17,9 +17,10 @@
                  / (1 − (1 + i/12)^−Laufzeit)
 
    Liegt die monatliche Energiemenge unterhalb der kleinsten oder
-   oberhalb der größten Menge der Matrix — oder in einer Lücke
-   zwischen zwei Varianten — wird wie auf der Standardseite die
-   kundenspezifische Variante ausgegeben.
+   oberhalb der größten Menge der Matrix liegt, wird wie auf der
+   Standardseite die kundenspezifische Variante ausgegeben. Liegt sie
+   in einer Lücke zwischen zwei Varianten, wird die nächstgrößere
+   Variante mit ihrer Mindestmenge als Berechnungsbasis verwendet.
    ---------------------------------------------------------------- */
 var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0.20 };
 
@@ -45,24 +46,51 @@ function variantenPreis(v, kwh) {
     + PPU_KONST.spirii + PPU_KONST.audi + PPU_KONST.monitoring + PPU_KONST.strom;
 }
 
-/* Auswahl der Variante — gibt null zurück, wenn kein Eintrag der Matrix passt */
+/* Auswahl der Variante nach Berechnungsmatrix.
+   Rückgabe: { v: Variante, kwhRechnung: Menge für die Preisbildung, mindest: true/false }
+   oder null, wenn kein Eintrag der Matrix passt.
+   Liegt die Menge in einer Lücke zwischen zwei Varianten, wird die
+   nächstgrößere Variante mit ihrer Mindestmenge herangezogen. */
 function waehleVariante(kwh, netzKwVerfuegbar, ladepunkte) {
-  var kandidaten = VARIANTEN.filter(function (v) { return kwh >= v.kwhMin && kwh <= v.kwhMax; });
-  if (!kandidaten.length) return null;
+  if (!kwh) return null;
+  var alleMin = VARIANTEN.map(function (v) { return v.kwhMin; });
+  var alleMax = VARIANTEN.map(function (v) { return v.kwhMax; });
+  var globalMin = Math.min.apply(null, alleMin);
+  var globalMax = Math.max.apply(null, alleMax);
+  // Unterhalb der kleinsten bzw. oberhalb der größten Menge -> kundenspezifisch
+  if (kwh < globalMin || kwh > globalMax) return null;
 
-  if (ladepunkte) {
-    var n = parseInt(ladepunkte, 10);
-    var exakt = kandidaten.filter(function (v) { return v.ladepunkte === n; });
-    kandidaten = exakt.length ? exakt : kandidaten.filter(function (v) { return v.ladepunkte >= n; });
-    if (!kandidaten.length) return null;
+  function filtern(liste) {
+    var k = liste.slice();
+    if (ladepunkte) {
+      var n = parseInt(ladepunkte, 10);
+      var exakt = k.filter(function (v) { return v.ladepunkte === n; });
+      k = exakt.length ? exakt : k.filter(function (v) { return v.ladepunkte >= n; });
+    }
+    if (netzKwVerfuegbar > 0) {
+      k = k.filter(function (v) { return v.netzKw <= netzKwVerfuegbar; });
+    }
+    return k;
   }
-  if (netzKwVerfuegbar > 0) {
-    kandidaten = kandidaten.filter(function (v) { return v.netzKw <= netzKwVerfuegbar; });
-    if (!kandidaten.length) return null;
+
+  // 1) Direkte Übereinstimmung mit einem Mengenband
+  var direkt = filtern(VARIANTEN.filter(function (v) { return kwh >= v.kwhMin && kwh <= v.kwhMax; }));
+  if (direkt.length) {
+    var best = direkt.reduce(function (a, b) {
+      return variantenPreis(a, kwh) <= variantenPreis(b, kwh) ? a : b;
+    });
+    return { v: best, kwhRechnung: kwh, mindest: false };
   }
-  return kandidaten.reduce(function (a, b) {
-    return variantenPreis(a, kwh) <= variantenPreis(b, kwh) ? a : b;
+
+  // 2) Lücke -> nächstgrößere Variante, Preis auf Basis ihrer Mindestmenge
+  var groesser = filtern(VARIANTEN.filter(function (v) { return v.kwhMin > kwh; }));
+  if (!groesser.length) return null;
+  var naechsteMin = Math.min.apply(null, groesser.map(function (v) { return v.kwhMin; }));
+  var stufe = groesser.filter(function (v) { return v.kwhMin === naechsteMin; });
+  var bestG = stufe.reduce(function (a, b) {
+    return variantenPreis(a, naechsteMin) <= variantenPreis(b, naechsteMin) ? a : b;
   });
+  return { v: bestG, kwhRechnung: naechsteMin, mindest: true };
 }
 
 function fmtKwh(n) { return Math.round(n).toLocaleString('de-DE'); }
@@ -406,7 +434,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const netzKwVerfuegbar = kwEingabe > 0 ? kwEingabe : (isCee ? 86 : 0);
 
       // --- Variantenauswahl nach Berechnungsmatrix ---
-      const variante = waehleVariante(totalKwh, netzKwVerfuegbar, ladepunkte);
+      const auswahl  = waehleVariante(totalKwh, netzKwVerfuegbar, ladepunkte);
+      const variante = auswahl ? auswahl.v : null;
+      const rechenKwh = auswahl ? auswahl.kwhRechnung : totalKwh;
+      const istMindest = auswahl ? auswahl.mindest : false;
 
       const CAPACITY_NOTE = 'Abhängig vom geplanten Einsatz- und Ladeprofil der Fahrzeuge.';
       const ppuBox    = document.getElementById('ppu-box');
@@ -432,8 +463,8 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryCapacity = 'Bestandteil der gesonderten PowerCube Konfiguration';
         summaryCapacityNote = '';
       } else {
-        rate = variantenPreis(variante, totalKwh);
-        rateLabel = fmtPreis(rate) + ' €/kWh';
+        rate = variantenPreis(variante, rechenKwh);
+        rateLabel = fmtPreis(rate) + ' €/kWh' + (istMindest ? ' (Mindestmenge ' + fmtKwh(rechenKwh) + ' kWh / Monat)' : '');
         summaryCapacity = variante.lvMin + '–' + variante.lvMax + ' Ladevorgänge / 24 h';
         if(videoBlock) videoBlock.classList.remove('show');
         if(videoEl){ try { videoEl.pause(); } catch(e){} }
@@ -443,7 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const lbl = document.querySelector('#ppu-box .lbl');
         if(lbl) lbl.textContent = 'Preisindikation nach Berechnungsmatrix · Variante ' + variante.badge;
         const from = document.querySelector('#ppu-box .ppu-from');
-        if(from) from.textContent = 'Berechnet für ' + fmtKwh(totalKwh) + ' kWh / Monat · Pay per Use, Abrechnung je geladener kWh';
+        if(from) from.textContent = istMindest
+          ? 'Berechnet für die Mindestmenge von ' + fmtKwh(rechenKwh) + ' kWh / Monat (Ihr Bedarf: ' + fmtKwh(totalKwh) + ' kWh / Monat) · Pay per Use, Abrechnung je geladener kWh'
+          : 'Berechnet für ' + fmtKwh(totalKwh) + ' kWh / Monat · Pay per Use, Abrechnung je geladener kWh';
 
         if(variante.id === 'V1'){
           // V1 -> bestehende Darstellung der empfohlenen Ladelösung
