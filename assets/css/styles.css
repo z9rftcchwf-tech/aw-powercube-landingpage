@@ -854,3 +854,11 @@ body.pro-locked { overflow: hidden; }
   .btn-qc .ic,.btn-dl .ic{width:17px;height:17px;margin:0}
   .site-header .container{gap:8px}
 }
+
+/* Rechtszeile in der Kontaktkarte (ersetzt den QR-Code) */
+.contact-legal{
+  margin-top:34px;padding-top:18px;border-top:1px solid rgba(255,255,255,.12);
+  font-size:.88rem;color:#9aa6b6;line-height:1.6;
+}
+.contact-legal a{color:#cdd5e0;text-decoration:underline;text-underline-offset:2px}
+.contact-legal a:hover{color:var(--accent)}
