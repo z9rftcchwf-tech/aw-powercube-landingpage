@@ -9,17 +9,17 @@
    Energy demand (kWh/month) = sum( number of e-trucks × distance km/day × operating days/month ), 1 km = 1 kWh.
    Tiers:
      < 24,000 kWh            -> no reliable calculation (consultation)
-     24,000 – < 30,400 kWh   -> from €0.11/kWh
-     30,400 – < 38,000 kWh   -> from €0.11/kWh
-     38,000 – < 45,000 kWh   -> from €0.11/kWh
+     24,000 – < 30,400 kWh   -> from €0.14/kWh
+     30,400 – < 38,000 kWh   -> from €0.14/kWh
+     38,000 – < 45,000 kWh   -> from €0.14/kWh
      ≥ 45,000 kWh            -> no reliable calculation (consultation)
    Returns: number (€/kWh) or null if no calculation is possible. */
 function ppuRate(kwh){
   if(kwh < 24000) return null;
   if(kwh >= 45000) return null;
-  if(kwh >= 38000) return 0.11;
-  if(kwh >= 30400) return 0.11;
-  if(kwh >= 24000) return 0.11;
+  if(kwh >= 38000) return 0.14;
+  if(kwh >= 30400) return 0.14;
+  if(kwh >= 24000) return 0.14;
   return null;
 }
 
