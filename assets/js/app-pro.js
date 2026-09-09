@@ -11,10 +11,13 @@
            Reiter „PowerCube Varianten“ und „PPU-Modell je kWh“
 
    Preisformel (identisch mit Spalte O/P der Excel):
-     PPU €/kWh = (CPO_monatlich + Annuität_monatlich) / kWh_Monat
-                 + Spirii + AUDI + Monitoring + Strompreis
+     PPU €/kWh = ((CPO_monatlich + Annuität_monatlich) / kWh_Monat
+                 + Spirii + AUDI + Monitoring + Strompreis)
+                 × (1 + Findustrial Fee)
      Annuität  = (Wertbasis × (1 − Restwert)) × (i/12)
                  / (1 − (1 + i/12)^−Laufzeit)
+     Stand 09.09.2026: Laufzeit 108 Monate (9 Jahre), Restwert 0 %,
+     Findustrial Fee 5 % auf den Endpreis (Reiter G21).
 
    Liegt die monatliche Energiemenge unterhalb der kleinsten oder
    oberhalb der größten Menge der Matrix liegt, wird wie auf der
@@ -22,7 +25,7 @@
    in einer Lücke zwischen zwei Varianten, wird die nächstgrößere
    Variante mit ihrer Mindestmenge als Berechnungsbasis verwendet.
    ---------------------------------------------------------------- */
-var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0.20 };
+var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0, fee: 0.05 };
 
 var VARIANTEN = [
   { id: 'V1',      badge: 'V1',         format: '10-Fuß-Container', speicher: 756,  hycInt: 400,  hycExt: 0,   ladepunkte: 2, netzKw: 80,  lvMin: 3,  lvMax: 5,  tage: 20, kwhMin: 21000,  kwhMax: 28000,  wertbasis: 420000, cpo: 15000 },
@@ -42,8 +45,9 @@ function annuitaet(v) {
 /* Exakter PPU-Preis (€/kWh) einer Variante für eine monatliche Energiemenge */
 function variantenPreis(v, kwh) {
   if (!kwh) return null;
-  return (v.cpo / 12 + annuitaet(v)) / kwh
+  var basis = (v.cpo / 12 + annuitaet(v)) / kwh
     + PPU_KONST.spirii + PPU_KONST.audi + PPU_KONST.monitoring + PPU_KONST.strom;
+  return basis * (1 + PPU_KONST.fee);
 }
 
 /* Auswahl der Variante nach Berechnungsmatrix.

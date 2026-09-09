@@ -13,6 +13,8 @@
    Price formula (identical to columns O/P of the spreadsheet):
      PPU EUR/kWh = (monthly CPO + monthly annuity) / kWh per month
                    + Spirii + AUDI + monitoring + electricity price
+     Findustrial fee of 5 % is applied on top of the result.
+     As of 09 Sep 2026: term 108 months (9 years), residual value 0 %.
      Annuity     = (asset base x (1 - residual value)) x (i/12)
                    / (1 - (1 + i/12)^-term)
 
@@ -22,7 +24,7 @@
    variants, the next larger variant is used and priced at its minimum
    monthly volume.
    ---------------------------------------------------------------- */
-var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0.20 };
+var PPU_KONST = { spirii: 0, audi: 0.02, monitoring: 0.01, strom: 0, zins: 0.058, laufzeit: 108, restwert: 0, fee: 0.05 };
 
 var VARIANTEN = [
   { id: 'V1',   badge: 'V1',          format: '10-ft container', speicher: 756,  hycInt: 400,  hycExt: 0,   ladepunkte: 2, netzKw: 80,  lvMin: 3,  lvMax: 5,  tage: 20, kwhMin: 21000,  kwhMax: 28000,  wertbasis: 420000, cpo: 15000 },
@@ -40,8 +42,9 @@ function annuitaet(v) {
 
 function variantenPreis(v, kwh) {
   if (!kwh) return null;
-  return (v.cpo / 12 + annuitaet(v)) / kwh
+  var basis = (v.cpo / 12 + annuitaet(v)) / kwh
     + PPU_KONST.spirii + PPU_KONST.audi + PPU_KONST.monitoring + PPU_KONST.strom;
+  return basis * (1 + PPU_KONST.fee);
 }
 
 /* Variant selection per calculation matrix.
