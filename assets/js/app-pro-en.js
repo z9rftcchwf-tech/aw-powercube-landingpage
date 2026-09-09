@@ -502,7 +502,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         }
       }
-      document.getElementById('res-trucks').textContent = total;
+      // Note: the V1 branch replaces the whole text of #res-cube-desc, which removes the
+      // nested <strong id="res-trucks">. Guard against the missing element here
+      // (the vehicle count is already part of the new text).
+      var elTrucks = document.getElementById('res-trucks');
+      if(elTrucks) elTrucks.textContent = total;
 
       buildSummary(trucks, total, netz, netzKw, totalKwh, summaryCapacity, summaryCapacityNote);
 

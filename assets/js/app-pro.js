@@ -508,7 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         }
       }
-      document.getElementById('res-trucks').textContent = total;
+      // Hinweis: Im V1-Zweig wird der Text von #res-cube-desc komplett neu gesetzt.
+      // Dabei verschwindet das darin enthaltene <strong id="res-trucks">, weshalb hier
+      // gegen ein fehlendes Element abgesichert werden muss (die Anzahl steht bereits im Text).
+      var elTrucks = document.getElementById('res-trucks');
+      if(elTrucks) elTrucks.textContent = total;
 
       buildSummary(trucks, total, netz, netzKw, totalKwh, summaryCapacity, summaryCapacityNote);
 
